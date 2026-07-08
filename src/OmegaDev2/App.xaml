@@ -1,0 +1,41 @@
+<Application
+    x:Class="OmegaDev2.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Minimal dark palette; expand once we settle on branding. -->
+            <Color x:Key="OmegaDev2.BgColor">#1E1E22</Color>
+            <Color x:Key="OmegaDev2.PanelColor">#26262B</Color>
+            <Color x:Key="OmegaDev2.TextPrimaryColor">#EAEAEA</Color>
+            <Color x:Key="OmegaDev2.TextSecondaryColor">#9A9AA0</Color>
+            <Color x:Key="OmegaDev2.AccentColor">#7A5CFF</Color>
+
+            <SolidColorBrush x:Key="OmegaDev2.BgBrush"           Color="{StaticResource OmegaDev2.BgColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.PanelBrush"        Color="{StaticResource OmegaDev2.PanelColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.TextPrimaryBrush"  Color="{StaticResource OmegaDev2.TextPrimaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.TextSecondaryBrush" Color="{StaticResource OmegaDev2.TextSecondaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.AccentBrush"       Color="{StaticResource OmegaDev2.AccentColor}" />
+
+            <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+            </Style>
+            <Style TargetType="TextBox">
+                <Setter Property="Foreground" Value="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+            </Style>
+            <Style TargetType="ComboBox">
+                <Setter Property="Foreground" Value="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+            </Style>
+            <Style TargetType="Button">
+                <Setter Property="Foreground" Value="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+            </Style>
+            <Style TargetType="NavigationViewItem">
+                <Setter Property="Foreground" Value="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

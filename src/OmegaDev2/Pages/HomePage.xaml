@@ -1,0 +1,21 @@
+<Page
+    x:Class="OmegaDev2.Pages.HomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="{ThemeResource OmegaDev2.BgBrush}">
+
+    <StackPanel Padding="40" Spacing="12" MaxWidth="800" HorizontalAlignment="Left">
+        <TextBlock Text="OmegaDev2"
+                   FontSize="42"
+                   FontWeight="Bold"
+                   Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+        <TextBlock Text="Server-side dev tools for the 1.52 MHServerEmu fork."
+                   FontSize="18"
+                   Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+        <TextBlock Margin="0,24,0,0"
+                   FontSize="14"
+                   TextWrapping="Wrap"
+                   Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}"
+                   Text="Pick a tool from the left. First one shipped: Teleport Pad." />
+    </StackPanel>
+</Page>
