@@ -4,28 +4,91 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:pages="using:OmegaDev2.Pages">
 
-    <Grid Background="{ThemeResource OmegaDev2.BgBrush}">
+    <Grid Background="{ThemeResource OmegaDev2.PageBackgroundBrush}">
         <NavigationView x:Name="Nav"
                         PaneDisplayMode="Left"
+                        OpenPaneLength="280"
                         IsSettingsVisible="False"
                         IsBackButtonVisible="Collapsed"
                         SelectionChanged="Nav_SelectionChanged"
-                        Background="{ThemeResource OmegaDev2.BgBrush}">
+                        Background="{ThemeResource OmegaDev2.PageBackgroundBrush}"
+                        Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}">
+
+            <!-- Branded pane header + server status pill -->
+            <NavigationView.PaneHeader>
+                <Border Padding="14,14,12,14"
+                        BorderBrush="{ThemeResource OmegaDev2.PanelBorderBrush}"
+                        BorderThickness="0,0,0,1">
+                    <StackPanel Spacing="8">
+                        <StackPanel Spacing="0">
+                            <TextBlock FontSize="16"
+                                       FontWeight="SemiBold"
+                                       CharacterSpacing="180"
+                                       Foreground="{ThemeResource OmegaDev2.AccentBrush}"
+                                       Text="OmegaDev2" />
+                            <TextBlock FontSize="10"
+                                       Opacity="0.55"
+                                       CharacterSpacing="240"
+                                       FontWeight="SemiBold"
+                                       Text="1.52.0.1700" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <Ellipse x:Name="ServerStatusDot"
+                                     Width="7" Height="7"
+                                     Fill="{ThemeResource OmegaDev2.DangerBrush}"
+                                     VerticalAlignment="Center" />
+                            <TextBlock x:Name="ServerStatusText"
+                                       FontSize="10"
+                                       Opacity="0.75"
+                                       VerticalAlignment="Center"
+                                       Text="server: disconnected" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </NavigationView.PaneHeader>
+
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Home" Tag="home">
                     <NavigationViewItem.Icon>
-                        <SymbolIcon Symbol="Home" />
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE80F;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItemHeader Content="Regions" />
+
+                <NavigationViewItemHeader Content="REGIONS" />
                 <NavigationViewItem Content="Teleport Pad" Tag="teleportpad">
                     <NavigationViewItem.Icon>
-                        <SymbolIcon Symbol="Map" />
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE909;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+
+                <NavigationViewItemHeader Content="LOOT" />
+                <NavigationViewItem Content="Gear Picker" Tag="gearpicker">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE7B8;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+
+                <NavigationViewItemHeader Content="SERVER" />
+                <NavigationViewItem Content="Diagnostics" Tag="diagnostics">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE9F9;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
 
-            <Frame x:Name="ContentFrame" Background="{ThemeResource OmegaDev2.BgBrush}" />
+            <!-- Small footer strip so the pane never looks empty at the bottom -->
+            <NavigationView.PaneFooter>
+                <Border Padding="14,10,12,14"
+                        BorderBrush="{ThemeResource OmegaDev2.PanelBorderBrush}"
+                        BorderThickness="0,1,0,0">
+                    <TextBlock FontSize="10"
+                               Opacity="0.55"
+                               CharacterSpacing="120"
+                               Text="OmegaDev2  ·  v0.1" />
+                </Border>
+            </NavigationView.PaneFooter>
+
+            <Frame x:Name="ContentFrame" Background="{ThemeResource OmegaDev2.PageBackgroundBrush}" />
         </NavigationView>
     </Grid>
 </Window>

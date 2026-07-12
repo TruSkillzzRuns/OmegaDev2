@@ -8,18 +8,45 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Minimal dark palette; expand once we settle on branding. -->
-            <Color x:Key="OmegaDev2.BgColor">#1E1E22</Color>
-            <Color x:Key="OmegaDev2.PanelColor">#26262B</Color>
-            <Color x:Key="OmegaDev2.TextPrimaryColor">#EAEAEA</Color>
-            <Color x:Key="OmegaDev2.TextSecondaryColor">#9A9AA0</Color>
-            <Color x:Key="OmegaDev2.AccentColor">#7A5CFF</Color>
+            <!-- Palette borrowed from OmegaDev (cyan accent on tuned dark grays). -->
+            <Color x:Key="OmegaDev2.PageBackgroundColor">#FF121418</Color>
+            <Color x:Key="OmegaDev2.PanelBackgroundColor">#FF1B1F24</Color>
+            <Color x:Key="OmegaDev2.PanelSecondaryColor">#FF232933</Color>
+            <Color x:Key="OmegaDev2.PanelBorderColor">#FF2F3846</Color>
+            <Color x:Key="OmegaDev2.TextPrimaryColor">#FFF3F4F6</Color>
+            <Color x:Key="OmegaDev2.TextSecondaryColor">#FFB5BDC9</Color>
+            <Color x:Key="OmegaDev2.TextTertiaryColor">#FF7F8898</Color>
+            <Color x:Key="OmegaDev2.AccentColor">#FF4BC2FF</Color>
+            <Color x:Key="OmegaDev2.DangerColor">#FFEF4444</Color>
+            <Color x:Key="OmegaDev2.SuccessColor">#FF34D399</Color>
 
-            <SolidColorBrush x:Key="OmegaDev2.BgBrush"           Color="{StaticResource OmegaDev2.BgColor}" />
-            <SolidColorBrush x:Key="OmegaDev2.PanelBrush"        Color="{StaticResource OmegaDev2.PanelColor}" />
-            <SolidColorBrush x:Key="OmegaDev2.TextPrimaryBrush"  Color="{StaticResource OmegaDev2.TextPrimaryColor}" />
-            <SolidColorBrush x:Key="OmegaDev2.TextSecondaryBrush" Color="{StaticResource OmegaDev2.TextSecondaryColor}" />
-            <SolidColorBrush x:Key="OmegaDev2.AccentBrush"       Color="{StaticResource OmegaDev2.AccentColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.PageBackgroundBrush"   Color="{StaticResource OmegaDev2.PageBackgroundColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.PanelBackgroundBrush"  Color="{StaticResource OmegaDev2.PanelBackgroundColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.PanelSecondaryBrush"   Color="{StaticResource OmegaDev2.PanelSecondaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.PanelBorderBrush"      Color="{StaticResource OmegaDev2.PanelBorderColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.TextPrimaryBrush"      Color="{StaticResource OmegaDev2.TextPrimaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.TextSecondaryBrush"    Color="{StaticResource OmegaDev2.TextSecondaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.TextTertiaryBrush"     Color="{StaticResource OmegaDev2.TextTertiaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.AccentBrush"           Color="{StaticResource OmegaDev2.AccentColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.DangerBrush"           Color="{StaticResource OmegaDev2.DangerColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.SuccessBrush"          Color="{StaticResource OmegaDev2.SuccessColor}" />
+
+            <!-- Backward-compat aliases so existing pages don't have to change. -->
+            <SolidColorBrush x:Key="OmegaDev2.BgBrush"    Color="{StaticResource OmegaDev2.PageBackgroundColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.PanelBrush" Color="{StaticResource OmegaDev2.PanelBackgroundColor}" />
+
+            <!-- OmegaDev.* aliases so ported pages compile without renaming brushes. -->
+            <SolidColorBrush x:Key="OmegaDev.PageBackgroundBrush"  Color="{StaticResource OmegaDev2.PageBackgroundColor}" />
+            <SolidColorBrush x:Key="OmegaDev.PanelBackgroundBrush" Color="{StaticResource OmegaDev2.PanelBackgroundColor}" />
+            <SolidColorBrush x:Key="OmegaDev.PanelSecondaryBrush"  Color="{StaticResource OmegaDev2.PanelSecondaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev.PanelBorderBrush"     Color="{StaticResource OmegaDev2.PanelBorderColor}" />
+            <SolidColorBrush x:Key="OmegaDev.TextPrimaryBrush"     Color="{StaticResource OmegaDev2.TextPrimaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev.TextSecondaryBrush"   Color="{StaticResource OmegaDev2.TextSecondaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev.AccentBrush"          Color="{StaticResource OmegaDev2.AccentColor}" />
+
+            <!-- NavigationView pane matches the panel color so header/menu blend. -->
+            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{StaticResource OmegaDev2.PanelBackgroundColor}" />
+            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground"  Color="{StaticResource OmegaDev2.PanelBackgroundColor}" />
 
             <Style TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
@@ -35,6 +62,9 @@
             </Style>
             <Style TargetType="NavigationViewItem">
                 <Setter Property="Foreground" Value="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+            </Style>
+            <Style TargetType="NavigationViewItemHeader">
+                <Setter Property="Foreground" Value="{ThemeResource OmegaDev2.AccentBrush}" />
             </Style>
         </ResourceDictionary>
     </Application.Resources>

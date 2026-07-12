@@ -1,0 +1,17 @@
+<UserControl
+    x:Class="OmegaDev2.Controls.ProtoRefPicker"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ProtoRefPicker — drop-in AutoSuggestBox for any /webapi/protocatalog class.
+         Loads the catalog on first focus and caches per CatalogClass so switching
+         between multiple pickers of the same class stays instant. -->
+    <AutoSuggestBox
+        x:Name="Box"
+        QueryIcon="Find"
+        TextMemberPath="DisplayLine"
+        TextChanged="Box_TextChanged"
+        SuggestionChosen="Box_SuggestionChosen"
+        GotFocus="Box_GotFocus"
+        HorizontalAlignment="Stretch" />
+</UserControl>

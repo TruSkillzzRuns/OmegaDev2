@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="OmegaDev2.Pages.DebugConsolePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:OmegaDev2.Pages"
+    NavigationCacheMode="Enabled">
+    <Page.Resources>
+        <Style x:Key="StatTile" TargetType="Border">
+            <Setter Property="Padding" Value="18,12" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="{ThemeResource OmegaDev.PanelBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource OmegaDev.PanelBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="MinWidth" Value="140" />
+        </Style>
+        <Style x:Key="StatValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="22" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{ThemeResource OmegaDev.TextPrimaryBrush}" />
+        </Style>
+        <Style x:Key="StatLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="CharacterSpacing" Value="120" />
+            <Setter Property="Opacity" Value="0.7" />
+            <Setter Property="Foreground" Value="{ThemeResource OmegaDev.TextSecondaryBrush}" />
+        </Style>
+        <Style x:Key="LevelChip" TargetType="Border">
+            <Setter Property="Padding" Value="6,1" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="MinWidth" Value="58" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+        <DataTemplate x:Key="LogEntryTemplate" x:DataType="local:LogEntryViewModel">
+            <Grid Padding="10,3" ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="92" />
+                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="170" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{x:Bind Ts}" FontFamily="Consolas" FontSize="12"
+                           Foreground="{ThemeResource OmegaDev.TextSecondaryBrush}" VerticalAlignment="Center" />
+                <Border Grid.Column="1" Style="{StaticResource LevelChip}"
+                        Background="{x:Bind LevelBrush}">
+                    <TextBlock Text="{x:Bind Level}" FontSize="11" FontWeight="SemiBold"
+                               Foreground="White" HorizontalAlignment="Center" />
+                </Border>
+                <TextBlock Grid.Column="2" Text="{x:Bind Logger}" FontFamily="Consolas" FontSize="12"
+                           Foreground="{ThemeResource OmegaDev.AccentBrush}" TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" />
+                <TextBlock Grid.Column="3" Text="{x:Bind Message, Mode=OneWay}" FontFamily="Consolas" FontSize="12"
+                           Foreground="{ThemeResource OmegaDev.TextPrimaryBrush}" TextWrapping="Wrap"
+                           VerticalAlignment="Center" />
+                <Border Grid.Column="4" Background="{ThemeResource OmegaDev.PanelSecondaryBrush}"
+                        CornerRadius="10" Padding="6,1" VerticalAlignment="Center" Margin="6,0,0,0"
+                        Visibility="{x:Bind RepeatBadgeVisible, Mode=OneWay}">
+                    <TextBlock Text="{x:Bind RepeatBadge, Mode=OneWay}" FontSize="10" FontWeight="SemiBold"
+                               Foreground="{ThemeResource OmegaDev.TextSecondaryBrush}" />
+                </Border>
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid Background="{ThemeResource OmegaDev.PageBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Padding="22,14" BorderThickness="0,0,0,1"
+                BorderBrush="{ThemeResource OmegaDev.PanelBorderBrush}"
+                Background="{ThemeResource OmegaDev.PanelBackgroundBrush}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="Debug Console" FontSize="22" FontWeight="SemiBold"
+                               Foreground="{ThemeResource OmegaDev.TextPrimaryBrush}" />
+                    <TextBlock x:Name="HeaderSubtitle"
+                               Text="Quiet by default — warnings + errors only. Toggle 'Show all' to see everything."
+                               FontSize="13" Opacity="0.75"
+                               Foreground="{ThemeResource OmegaDev.TextSecondaryBrush}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <ToggleSwitch x:Name="QuietModeToggle"
+                                  Header="Mode" OnContent="Quiet" OffContent="Show all"
+                                  Toggled="QuietMode_Toggled"
+                                  ToolTipService.ToolTip="Quiet hides high-noise Info messages from polling/handshake. Toggle off to see every line." />
+                    <ToggleSwitch x:Name="AutoScrollToggle"
+                                  Header="Follow" OnContent="On" OffContent="Off" />
+                    <Button Click="Clear_Click" Padding="14,7" MinHeight="34"
+                            ToolTipService.ToolTip="Clear visible log (server buffer untouched)">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE74D;" FontSize="13" />
+                            <TextBlock Text="Clear" />
+                        </StackPanel>
+                    </Button>
+                    <Button Click="Copy_Click" Padding="14,7" MinHeight="34"
+                            ToolTipService.ToolTip="Copy all visible log lines to clipboard">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8C8;" FontSize="13" />
+                            <TextBlock Text="Copy" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Stat tiles -->
+        <Border Grid.Row="1" Padding="22,14" BorderThickness="0,0,0,1"
+                BorderBrush="{ThemeResource OmegaDev.PanelBorderBrush}"
+                Background="{ThemeResource OmegaDev.PageBackgroundBrush}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Border Style="{StaticResource StatTile}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Ellipse x:Name="HealthDot" Width="10" Height="10" Fill="Gray" VerticalAlignment="Center" />
+                            <TextBlock x:Name="HealthValue" Text="—" Style="{StaticResource StatValue}" />
+                        </StackPanel>
+                        <TextBlock Text="SERVER" Style="{StaticResource StatLabel}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatTile}">
+                    <StackPanel>
+                        <TextBlock x:Name="ErrorsValue" Text="0" Style="{StaticResource StatValue}" />
+                        <TextBlock Text="ERRORS · LAST 5 MIN" Style="{StaticResource StatLabel}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatTile}">
+                    <StackPanel>
+                        <TextBlock x:Name="WarningsValue" Text="0" Style="{StaticResource StatValue}" />
+                        <TextBlock Text="WARNINGS · LAST 5 MIN" Style="{StaticResource StatLabel}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatTile}">
+                    <StackPanel>
+                        <TextBlock x:Name="UptimeValue" Text="—" Style="{StaticResource StatValue}" />
+                        <TextBlock Text="UPTIME" Style="{StaticResource StatLabel}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatTile}">
+                    <StackPanel>
+                        <TextBlock x:Name="TotalValue" Text="0" Style="{StaticResource StatValue}" />
+                        <TextBlock Text="MESSAGES BUFFERED" Style="{StaticResource StatLabel}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- Filters bar (collapsed when in quiet mode) -->
+        <Border Grid.Row="2" x:Name="FiltersBar" Padding="22,10" BorderThickness="0,0,0,1"
+                BorderBrush="{ThemeResource OmegaDev.PanelBorderBrush}"
+                Background="{ThemeResource OmegaDev.PanelBackgroundBrush}"
+                Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <TextBlock Text="Level:" VerticalAlignment="Center" Foreground="{ThemeResource OmegaDev.TextSecondaryBrush}" />
+                <ComboBox x:Name="LevelFilter" SelectedIndex="2" MinWidth="120" SelectionChanged="LevelFilter_Changed">
+                    <ComboBoxItem Content="Trace" />
+                    <ComboBoxItem Content="Debug" />
+                    <ComboBoxItem Content="Info" />
+                    <ComboBoxItem Content="Warn" />
+                    <ComboBoxItem Content="Error" />
+                </ComboBox>
+                <TextBlock Text="Search:" VerticalAlignment="Center" Margin="12,0,0,0"
+                           Foreground="{ThemeResource OmegaDev.TextSecondaryBrush}" />
+                <AutoSuggestBox x:Name="SearchBox" MinWidth="240" MaxWidth="380"
+                                PlaceholderText="Filter message/logger…"
+                                QueryIcon="Find" TextChanged="SearchBox_TextChanged" />
+                <Button Content="AI"      Padding="10,5" Click="QuickFilter_Click" Tag="AI" />
+                <Button Content="Combat"  Padding="10,5" Click="QuickFilter_Click" Tag="Power" />
+                <Button Content="Network" Padding="10,5" Click="QuickFilter_Click" Tag="NetMessage" />
+                <Button Content="× clear" Padding="10,5" Click="QuickFilterClear_Click" />
+            </StackPanel>
+        </Border>
+
+        <!-- Log stream (or empty-state hero) -->
+        <Border Grid.Row="3" Margin="14" CornerRadius="8"
+                Background="{ThemeResource OmegaDev.PanelBackgroundBrush}"
+                BorderBrush="{ThemeResource OmegaDev.PanelBorderBrush}"
+                BorderThickness="1">
+            <Grid>
+                <ListView x:Name="LogList"
+                          ItemTemplate="{StaticResource LogEntryTemplate}"
+                          SelectionMode="Extended"
+                          IsItemClickEnabled="False"
+                          Background="Transparent"
+                          Padding="4">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="MinHeight" Value="0" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Margin" Value="0" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+                <StackPanel x:Name="EmptyState" Spacing="10"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Visibility="Visible">
+                    <FontIcon Glyph="&#xE73E;" FontSize="64" Opacity="0.45"
+                              Foreground="{ThemeResource OmegaDev.AccentBrush}"
+                              HorizontalAlignment="Center" />
+                    <TextBlock x:Name="EmptyTitle" Text="All quiet."
+                               FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center"
+                               Foreground="{ThemeResource OmegaDev.TextPrimaryBrush}" />
+                    <TextBlock x:Name="EmptySubtitle"
+                               Text="No warnings or errors. Toggle 'Show all' to see verbose activity."
+                               FontSize="13" Opacity="0.7" HorizontalAlignment="Center"
+                               Foreground="{ThemeResource OmegaDev.TextSecondaryBrush}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Status bar -->
+        <Border Grid.Row="4" Padding="22,10"
+                Background="{ThemeResource OmegaDev.PanelBackgroundBrush}"
+                BorderBrush="{ThemeResource OmegaDev.PanelBorderBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" x:Name="StatusText"
+                           VerticalAlignment="Center" FontSize="13"
+                           Foreground="{ThemeResource OmegaDev.TextPrimaryBrush}"
+                           Text="Connecting…" />
+                <TextBlock Grid.Column="1" x:Name="StatsText"
+                           VerticalAlignment="Center" FontSize="12"
+                           Foreground="{ThemeResource OmegaDev.TextSecondaryBrush}"
+                           Text="" />
+            </Grid>
+        </Border>
+    </Grid>
+</Page>
