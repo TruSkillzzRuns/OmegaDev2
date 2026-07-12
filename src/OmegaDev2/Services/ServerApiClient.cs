@@ -170,6 +170,15 @@ public sealed class ServerApiClient : IDisposable
         return await resp.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
     }
 
+    public async Task<byte[]?> GetTexturePngAsync(string assetName, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(assetName)) return null;
+        string url = $"webapi/texbyname?name={Uri.EscapeDataString(assetName)}";
+        using var resp = await _http.GetAsync(BuildUri(url), ct).ConfigureAwait(false);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+    }
+
     public async Task<(int Status, string Body)> GetRegionBuildsListAsync(CancellationToken ct = default)
     {
         using var resp = await _http.GetAsync(BuildUri("webapi/regionbuilder/list"), ct).ConfigureAwait(false);
@@ -288,7 +297,119 @@ public sealed class ServerApiClient : IDisposable
 
     private static readonly JsonSerializerOptions s_camelCase = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
+    // ---- Phantom Heroes ----
+    public Task<PhantomHeroesResponse?> GetPhantomHeroesAsync(CancellationToken ct = default)
+        => GetJsonAsync<PhantomHeroesResponse>("webapi/phantoms/catalog", ct);
+
+    public Task<PhantomCostumesResponse?> GetPhantomCostumesAsync(string heroProtoRef, CancellationToken ct = default)
+        => GetJsonAsync<PhantomCostumesResponse>($"webapi/phantoms/catalog?hero={Uri.EscapeDataString(heroProtoRef)}", ct);
+
+    public Task<PhantomStatusResponse?> GetPhantomStatusAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<PhantomStatusResponse>($"webapi/phantoms/status?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
+    public Task<PhantomSquadsResponse?> GetPhantomSquadsAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<PhantomSquadsResponse>($"webapi/phantoms/squads?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
+    public Task<PhantomSpawnResponse?> PostPhantomSpawnAsync(object body, CancellationToken ct = default)
+        => PostJsonAsync<PhantomSpawnResponse>("webapi/phantoms/spawn", body, ct);
+
+    public Task<PhantomOpResponse?> PostPhantomClearAsync(string playerName, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/clear", new { playerName }, ct);
+
+    public Task<PhantomOpResponse?> PostPhantomCostumeAsync(object body, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/costume", body, ct);
+
+    public Task<PhantomOpResponse?> PostPhantomGearAsync(string playerName, string? phantomQuery, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/gear", new { playerName, phantomQuery }, ct);
+
+    public Task<PhantomOpResponse?> PostPhantomSquadOpAsync(string playerName, string op, string name, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/squads", new { playerName, op, name }, ct);
+
     public void Dispose() => _http.Dispose();
+}
+
+// ---- Phantom Heroes DTOs (match /webapi/phantoms/* on the 1.52 fork) ----
+
+public sealed class PhantomHeroesResponse
+{
+    public int TotalHeroes { get; set; }
+    public System.Collections.Generic.List<PhantomHeroEntry> Heroes { get; set; } = new();
+}
+
+public sealed class PhantomHeroEntry
+{
+    public string ProtoRef { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string? DisplayName { get; set; }
+    public string? PortraitPath { get; set; }
+    public System.Collections.Generic.List<string>? PortraitCandidates { get; set; }
+}
+
+public sealed class PhantomCostumesResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public int TotalCostumes { get; set; }
+    public System.Collections.Generic.List<PhantomCostumeEntry> Costumes { get; set; } = new();
+}
+
+public sealed class PhantomCostumeEntry
+{
+    public string ProtoRef { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string? DisplayName { get; set; }
+}
+
+public sealed class PhantomStatusResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Player { get; set; }
+    public int Count { get; set; }
+    public System.Collections.Generic.List<PhantomInfoEntry> Phantoms { get; set; } = new();
+}
+
+public sealed class PhantomInfoEntry
+{
+    public string AvatarId { get; set; } = "";
+    public string HeroProtoRef { get; set; } = "";
+    public string HeroName { get; set; } = "";
+    public string Username { get; set; } = "";
+    public int Level { get; set; }
+    public bool LockLevel { get; set; }
+    public string? CostumeRef { get; set; }
+    public bool InWorld { get; set; }
+}
+
+public sealed class PhantomSquadsResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public System.Collections.Generic.List<PhantomSquadEntry> Squads { get; set; } = new();
+}
+
+public sealed class PhantomSquadEntry
+{
+    public string Name { get; set; } = "";
+    public System.Collections.Generic.List<string> Heroes { get; set; } = new();
+    public System.Collections.Generic.List<int> Levels { get; set; } = new();
+}
+
+public sealed class PhantomSpawnResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public int Spawned { get; set; }
+    public int Failed { get; set; }
+    public string? FirstError { get; set; }
+}
+
+public sealed class PhantomOpResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Message { get; set; }
+    public int Removed { get; set; }
 }
 
 public sealed class RegionListResponse
@@ -344,11 +465,13 @@ public sealed class ItemCatalogEntry
 {
     public string ProtoRef { get; set; } = "";
     public string Name { get; set; } = "";
+    public string? DisplayName { get; set; }
     public string Path { get; set; } = "";
     public string Category { get; set; } = "";
     public string? Slot { get; set; }
     public string? Avatar { get; set; }
     public string? IconPath { get; set; }
+    public bool IsUnique { get; set; }
 }
 
 public sealed class ItemGiveRequest

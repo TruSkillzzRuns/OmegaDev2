@@ -20,17 +20,23 @@
                         BorderBrush="{ThemeResource OmegaDev2.PanelBorderBrush}"
                         BorderThickness="0,0,0,1">
                     <StackPanel Spacing="8">
-                        <StackPanel Spacing="0">
-                            <TextBlock FontSize="16"
-                                       FontWeight="SemiBold"
-                                       CharacterSpacing="180"
-                                       Foreground="{ThemeResource OmegaDev2.AccentBrush}"
-                                       Text="OmegaDev2" />
-                            <TextBlock FontSize="10"
-                                       Opacity="0.55"
-                                       CharacterSpacing="240"
-                                       FontWeight="SemiBold"
-                                       Text="1.52.0.1700" />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Border CornerRadius="6" Width="34" Height="34" VerticalAlignment="Center">
+                                <Image Source="ms-appx:///Assets/OmegaDev2Emblem.png"
+                                       Stretch="UniformToFill" />
+                            </Border>
+                            <StackPanel Spacing="0" VerticalAlignment="Center">
+                                <TextBlock FontSize="16"
+                                           FontWeight="SemiBold"
+                                           CharacterSpacing="180"
+                                           Foreground="{ThemeResource OmegaDev2.AccentBrush}"
+                                           Text="OmegaDev2" />
+                                <TextBlock FontSize="10"
+                                           Opacity="0.55"
+                                           CharacterSpacing="240"
+                                           FontWeight="SemiBold"
+                                           Text="1.52.0.1700" />
+                            </StackPanel>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <Ellipse x:Name="ServerStatusDot"
@@ -58,6 +64,13 @@
                 <NavigationViewItem Content="Teleport Pad" Tag="teleportpad">
                     <NavigationViewItem.Icon>
                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE909;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+
+                <NavigationViewItemHeader Content="PHANTOMS" />
+                <NavigationViewItem Content="Phantom Heroes" Tag="phantoms">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE716;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
 

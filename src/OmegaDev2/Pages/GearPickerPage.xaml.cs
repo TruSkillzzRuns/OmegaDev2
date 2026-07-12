@@ -30,9 +30,13 @@ public sealed class GearItemCard : INotifyPropertyChanged
 
     public ItemCatalogEntry Entry { get; }
     public string ProtoRef => Entry.ProtoRef;
-    public string Name => Entry.Name;
+    // Localized name front and center ("The..." names), data leaf as the
+    // fallback for items with no display string.
+    public string Name => string.IsNullOrEmpty(Entry.DisplayName) ? Entry.Name : Entry.DisplayName!;
     public string Category => Entry.Category;
-    public string SubLabel => Entry.Avatar ?? Entry.Slot ?? Entry.Category;
+    public string SubLabel => Entry.IsUnique
+        ? $"Unique · {Entry.Avatar ?? Entry.Category}"
+        : Entry.Avatar ?? Entry.Slot ?? Entry.Category;
     public string Path => Entry.Path;
     public Brush CategoryBrush { get; }
 
@@ -43,7 +47,10 @@ public sealed class GearItemCard : INotifyPropertyChanged
     public GearItemCard(ItemCatalogEntry entry)
     {
         Entry = entry;
-        CategoryBrush = GearPickerPage.CategoryBrush(entry.Category);
+        // Uniques get the classic orange accent regardless of base category.
+        CategoryBrush = entry.IsUnique
+            ? new SolidColorBrush(Color.FromArgb(0xFF, 0xE0, 0x8A, 0x2E))
+            : GearPickerPage.CategoryBrush(entry.Category);
     }
 }
 
@@ -68,7 +75,7 @@ public sealed class BasketEntry : INotifyPropertyChanged
 
     public ItemCatalogEntry Entry { get; }
     public string ProtoRef => Entry.ProtoRef;
-    public string Name => Entry.Name;
+    public string Name => string.IsNullOrEmpty(Entry.DisplayName) ? Entry.Name : Entry.DisplayName!;
 
     private double _count;
     public double Count { get => _count; set { if (_count != value) { _count = Math.Max(1, value); Raise(); } } }
@@ -168,6 +175,11 @@ public sealed partial class GearPickerPage : Page
 
             Categories.Clear();
             Categories.Add(new GearCategory("(All)", _allItems.Count));
+            // Synthetic section: every unique in the game, regardless of
+            // which slot/class it belongs to.
+            int uniqueCount = _allItems.Count(i => i.Entry.IsUnique);
+            if (uniqueCount > 0)
+                Categories.Add(new GearCategory("Unique", uniqueCount));
             foreach (var g in _allItems.GroupBy(i => i.Category).OrderBy(g => g.Key, StringComparer.Ordinal))
                 Categories.Add(new GearCategory(g.Key, g.Count()));
 
@@ -219,11 +231,21 @@ public sealed partial class GearPickerPage : Page
         int total = 0;
         foreach (var item in _allItems)
         {
-            if (!string.IsNullOrEmpty(_activeCategory) && item.Category != _activeCategory) continue;
+            // "Unique" is a synthetic section — it cuts across all base
+            // categories via the IsUnique flag.
+            if (_activeCategory == "Unique")
+            {
+                if (item.Entry.IsUnique == false) continue;
+            }
+            else if (!string.IsNullOrEmpty(_activeCategory) && item.Category != _activeCategory) continue;
+
             if (_activeAvatar != "(any)" && (item.Entry.Avatar ?? "") != _activeAvatar) continue;
             if (!string.IsNullOrEmpty(_activeSearch))
             {
+                // Match the localized display name, the data leaf name, and
+                // the full path.
                 if (item.Name.IndexOf(_activeSearch, StringComparison.OrdinalIgnoreCase) < 0 &&
+                    item.Entry.Name.IndexOf(_activeSearch, StringComparison.OrdinalIgnoreCase) < 0 &&
                     item.Path.IndexOf(_activeSearch, StringComparison.OrdinalIgnoreCase) < 0)
                     continue;
             }
@@ -247,13 +269,36 @@ public sealed partial class GearPickerPage : Page
     private int _iconsResolved;
     private int _iconsFailed;
 
+    private bool _iconSweepRunning;
+
     private async Task LoadIconsForShownAsync()
     {
-        _iconCts?.Cancel();
-        var cts = new CancellationTokenSource();
-        _iconCts = cts;
-        var ct = cts.Token;
+        // One sweep covers the whole catalog — a filter change while it's
+        // running doesn't need a restart (and cancelling mid-flight aborts
+        // in-progress HTTP requests, which shows up as connection-abort
+        // noise in the server log). The sweep is only cancelled when the
+        // user leaves the page.
+        if (_iconSweepRunning) return;
+        _iconSweepRunning = true;
 
+        _iconCts = new CancellationTokenSource();
+        var ct = _iconCts.Token;
+
+        try
+        {
+            await RunIconSweepAsync(ct);
+        }
+        finally { _iconSweepRunning = false; }
+    }
+
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        base.OnNavigatedFrom(e);
+        _iconCts?.Cancel();
+    }
+
+    private async Task RunIconSweepAsync(CancellationToken ct)
+    {
         // Visible-first ordering over the whole catalog.
         var shownSet = new HashSet<GearItemCard>(ShownItems);
         var queue = ShownItems.Where(NeedsIcon)
@@ -266,41 +311,66 @@ public sealed partial class GearPickerPage : Page
 
         foreach (var card in queue) card.IconRequested = true;
 
+        // Progress bar setup for this sweep.
+        int sweepTotal = queue.Count;
+        int sweepDone = 0;
+        IconProgressPanel.Visibility = Visibility.Visible;
+        IconProgressBar.Maximum = sweepTotal;
+        IconProgressBar.Value = 0;
+        IconProgressText.Text = $"0 / {sweepTotal:N0} icons";
+
         var s = SettingsService.Current;
         using var client = new ServerApiClient(s.ServerBaseUrl, s.BearerToken, TimeSpan.FromSeconds(30));
-        using var gate = new SemaphoreSlim(6, 6);
+        // The server extracts each uncached texture by shelling out to the
+        // extractor — every request is independent, so wide concurrency
+        // scales nearly linearly until the disk cache warms up.
+        using var gate = new SemaphoreSlim(12, 12);
+
+        void BumpProgress()
+        {
+            int done = Interlocked.Increment(ref sweepDone);
+            if ((done & 7) == 0 || done == sweepTotal)
+            {
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    IconProgressBar.Value = done;
+                    IconProgressText.Text = $"{done:N0} / {sweepTotal:N0} icons";
+                });
+            }
+        }
+
+        string portraitBase = s.ServerBaseUrl.TrimEnd('/');
 
         var tasks = queue.Select(async card =>
         {
             await gate.WaitAsync(ct);
             try
             {
+                // The byte fetch does double duty: it confirms the server can
+                // actually produce this texture AND warms the server's disk
+                // cache. Rendering then uses a direct URI source — the Image
+                // control's own loader handles decode reliably, and its
+                // second request lands on the just-warmed cache.
                 byte[]? png = await client.GetPortraitPngAsync(card.Entry.IconPath!, 96, 96, ct);
                 if (ct.IsCancellationRequested) { card.IconRequested = false; return; }
                 if (png == null || png.Length == 0)
                 {
                     Interlocked.Increment(ref _iconsFailed);
+                    BumpProgress();
                     return;
                 }
-                DispatcherQueue.TryEnqueue(async () =>
+
+                string iconUrl = $"{portraitBase}/webapi/portrait?path={Uri.EscapeDataString(card.Entry.IconPath!)}&w=96&h=96";
+                DispatcherQueue.TryEnqueue(() =>
                 {
-                    try
-                    {
-                        var bmp = new BitmapImage();
-                        using var ms = new Windows.Storage.Streams.InMemoryRandomAccessStream();
-                        await ms.WriteAsync(png.AsBuffer());
-                        ms.Seek(0);
-                        await bmp.SetSourceAsync(ms);
-                        card.Icon = bmp;
-                    }
+                    try { card.Icon = new BitmapImage(new Uri(iconUrl)) { DecodePixelWidth = 72 }; }
                     catch { }
                 });
-                int done = Interlocked.Increment(ref _iconsResolved);
-                if ((done & 127) == 0)
-                    DispatcherQueue.TryEnqueue(() => StatusText.Text = $"icons: {done:N0} resolved...");
+                Interlocked.Increment(ref _iconsResolved);
+                BumpProgress();
             }
             catch (OperationCanceledException) { card.IconRequested = false; }
-            catch { Interlocked.Increment(ref _iconsFailed); }
+            catch { Interlocked.Increment(ref _iconsFailed); BumpProgress(); }
             finally { gate.Release(); }
         }).ToList();
 
@@ -310,9 +380,12 @@ public sealed partial class GearPickerPage : Page
         {
             int resolved = _iconsResolved, failed = _iconsFailed;
             DispatcherQueue.TryEnqueue(() =>
+            {
+                IconProgressPanel.Visibility = Visibility.Collapsed;
                 StatusText.Text = failed > 0
                     ? $"icons: {resolved:N0} resolved, {failed:N0} unavailable"
-                    : $"icons: {resolved:N0} resolved");
+                    : $"icons: {resolved:N0} resolved";
+            });
         }
     }
 

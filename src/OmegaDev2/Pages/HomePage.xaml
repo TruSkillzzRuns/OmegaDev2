@@ -24,13 +24,19 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,32">
-                <TextBlock Text="OmegaDev2"
-                           FontSize="46"
-                           FontWeight="SemiBold"
-                           Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+            <StackPanel Grid.Row="0" Spacing="14" Margin="0,0,0,32">
+                <Border CornerRadius="10"
+                        HorizontalAlignment="Center"
+                        BorderBrush="{ThemeResource OmegaDev2.PanelBorderBrush}"
+                        BorderThickness="1">
+                    <Image Source="ms-appx:///Assets/OmegaDev2Logo.jpg"
+                           Stretch="Uniform"
+                           Height="300" />
+                </Border>
                 <TextBlock Text="Server-side dev tools for the 1.52 MHServerEmu fork. Sibling to OmegaDev — no sip touching, everything over WebAPI."
                            FontSize="15"
                            MaxWidth="900"
@@ -94,12 +100,7 @@
                            Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="16" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="16" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" MaxWidth="340" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     <Border Grid.Column="0" Style="{StaticResource ToolCardStyle}" Tag="teleportpad" Tapped="ToolCard_Tapped">
@@ -112,31 +113,25 @@
                                        Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
                         </StackPanel>
                     </Border>
-                    <Border Grid.Column="2" Style="{StaticResource ToolCardStyle}" Tag="regionremix" Tapped="ToolCard_Tapped">
+                </Grid>
+            </StackPanel>
+
+            <StackPanel Grid.Row="3" Spacing="12" Margin="0,0,0,24">
+                <TextBlock Text="PHANTOMS"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           CharacterSpacing="200"
+                           Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MaxWidth="340" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Style="{StaticResource ToolCardStyle}" Tag="phantoms" Tapped="ToolCard_Tapped">
                         <StackPanel Spacing="8">
-                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8B1;" FontSize="24" Foreground="{ThemeResource OmegaDev2.AccentBrush}" HorizontalAlignment="Left" />
-                            <TextBlock Text="Region Remix" FontSize="16" FontWeight="SemiBold" />
-                            <TextBlock Text="Random pick, category-filtered."
-                                       FontSize="12"
-                                       TextWrapping="Wrap"
-                                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Column="4" Style="{StaticResource ToolCardStyle}" Tag="regionbuilder" Tapped="ToolCard_Tapped">
-                        <StackPanel Spacing="8">
-                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8F4;" FontSize="24" Foreground="{ThemeResource OmegaDev2.AccentBrush}" HorizontalAlignment="Left" />
-                            <TextBlock Text="Region Builder" FontSize="16" FontWeight="SemiBold" />
-                            <TextBlock Text="Recipe: teleport + phantoms + extra commands."
-                                       FontSize="12"
-                                       TextWrapping="Wrap"
-                                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Column="6" Style="{StaticResource ToolCardStyle}" Tag="regionforge" Tapped="ToolCard_Tapped">
-                        <StackPanel Spacing="8">
-                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE945;" FontSize="24" Foreground="{ThemeResource OmegaDev2.AccentBrush}" HorizontalAlignment="Left" />
-                            <TextBlock Text="Region Forge" FontSize="16" FontWeight="SemiBold" />
-                            <TextBlock Text="Reforge the region you're already in."
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE716;" FontSize="24" Foreground="{ThemeResource OmegaDev2.AccentBrush}" HorizontalAlignment="Left" />
+                            <TextBlock Text="Phantom Heroes" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="Spawn, dress and manage AI hero bots — squads, costumes, gear."
                                        FontSize="12"
                                        TextWrapping="Wrap"
                                        Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
@@ -145,7 +140,31 @@
                 </Grid>
             </StackPanel>
 
-            <StackPanel Grid.Row="3" Spacing="12">
+            <StackPanel Grid.Row="4" Spacing="12" Margin="0,0,0,24">
+                <TextBlock Text="LOOT"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           CharacterSpacing="200"
+                           Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MaxWidth="340" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Style="{StaticResource ToolCardStyle}" Tag="gearpicker" Tapped="ToolCard_Tapped">
+                        <StackPanel Spacing="8">
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE7B8;" FontSize="24" Foreground="{ThemeResource OmegaDev2.AccentBrush}" HorizontalAlignment="Left" />
+                            <TextBlock Text="Gear Picker" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="Browse the item catalog and send gear to any player."
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </StackPanel>
+
+            <StackPanel Grid.Row="5" Spacing="12">
                 <TextBlock Text="SERVER"
                            FontSize="12"
                            FontWeight="SemiBold"

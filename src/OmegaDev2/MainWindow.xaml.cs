@@ -21,6 +21,11 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         Title = "OmegaDev2";
+
+        // Title-bar + taskbar icon (unpackaged app: resolve from the exe folder)
+        string icoPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "OmegaDev2.ico");
+        if (System.IO.File.Exists(icoPath))
+            AppWindow.SetIcon(icoPath);
         Nav.SelectedItem = Nav.MenuItems[0];
 
         _pingTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
@@ -56,6 +61,7 @@ public sealed partial class MainWindow : Window
         {
             "home"          => typeof(HomePage),
             "teleportpad"   => typeof(TeleportPadPage),
+            "phantoms"      => typeof(PhantomsPage),
             "gearpicker"    => typeof(GearPickerPage),
             "diagnostics"   => typeof(DebugConsolePage),
             _               => null,

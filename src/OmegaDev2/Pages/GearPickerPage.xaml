@@ -48,6 +48,21 @@
                 <TextBlock x:Name="StatusText"
                            VerticalAlignment="Center"
                            Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                <StackPanel x:Name="IconProgressPanel"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            Visibility="Collapsed"
+                            VerticalAlignment="Center">
+                    <ProgressBar x:Name="IconProgressBar"
+                                 Width="220"
+                                 MinHeight="10"
+                                 Minimum="0"
+                                 VerticalAlignment="Center" />
+                    <TextBlock x:Name="IconProgressText"
+                               FontSize="11"
+                               VerticalAlignment="Center"
+                               Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                </StackPanel>
             </StackPanel>
         </Border>
 
