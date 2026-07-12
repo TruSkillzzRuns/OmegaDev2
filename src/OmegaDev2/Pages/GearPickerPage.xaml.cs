@@ -257,6 +257,7 @@ public sealed partial class GearPickerPage : Page
             : $"{total:N0} items";
 
         _ = LoadIconsForShownAsync();
+        PrioritizeShownIcons();
     }
 
     // === Icons — fetched from the server's portrait endpoint ===============
@@ -346,27 +347,10 @@ public sealed partial class GearPickerPage : Page
             await gate.WaitAsync(ct);
             try
             {
-                // The byte fetch does double duty: it confirms the server can
-                // actually produce this texture AND warms the server's disk
-                // cache. Rendering then uses a direct URI source — the Image
-                // control's own loader handles decode reliably, and its
-                // second request lands on the just-warmed cache.
-                byte[]? png = await client.GetPortraitPngAsync(card.Entry.IconPath!, 96, 96, ct);
+                bool ok = await FetchIconCoreAsync(client, portraitBase, card, ct);
                 if (ct.IsCancellationRequested) { card.IconRequested = false; return; }
-                if (png == null || png.Length == 0)
-                {
-                    Interlocked.Increment(ref _iconsFailed);
-                    BumpProgress();
-                    return;
-                }
-
-                string iconUrl = $"{portraitBase}/webapi/portrait?path={Uri.EscapeDataString(card.Entry.IconPath!)}&w=96&h=96";
-                DispatcherQueue.TryEnqueue(() =>
-                {
-                    try { card.Icon = new BitmapImage(new Uri(iconUrl)) { DecodePixelWidth = 72 }; }
-                    catch { }
-                });
-                Interlocked.Increment(ref _iconsResolved);
+                if (ok) Interlocked.Increment(ref _iconsResolved);
+                else Interlocked.Increment(ref _iconsFailed);
                 BumpProgress();
             }
             catch (OperationCanceledException) { card.IconRequested = false; }
@@ -387,6 +371,73 @@ public sealed partial class GearPickerPage : Page
                     : $"icons: {resolved:N0} resolved";
             });
         }
+    }
+
+    // The byte fetch does double duty: it confirms the server can actually
+    // produce this texture AND warms the server's disk cache. Rendering then
+    // uses a direct URI source — the Image control's own loader handles
+    // decode reliably, and its second request lands on the just-warmed cache.
+    // Tries the TFC-backed portrait endpoint first, then falls back to
+    // texbyname (inline .upk mips) — item icons are split between the two
+    // stores, same as hero banners.
+    private async Task<bool> FetchIconCoreAsync(ServerApiClient client, string portraitBase, GearItemCard card, CancellationToken ct)
+    {
+        string iconUrl = $"{portraitBase}/webapi/portrait?path={Uri.EscapeDataString(card.Entry.IconPath!)}&w=128&h=128";
+        byte[]? png = await client.GetPortraitPngAsync(card.Entry.IconPath!, 128, 128, ct);
+        if (ct.IsCancellationRequested) return false;
+        if (png == null || png.Length == 0)
+        {
+            png = await client.GetTexturePngAsync(card.Entry.IconPath!, ct);
+            if (ct.IsCancellationRequested) return false;
+            iconUrl = $"{portraitBase}/webapi/texbyname?name={Uri.EscapeDataString(card.Entry.IconPath!)}";
+        }
+        if (png == null || png.Length == 0) return false;
+
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            // No DecodePixelWidth: many icons are 64px naturals served
+            // straight from the .upk — asking the decoder to upscale
+            // (decode width > natural) renders nothing on WinUI. The
+            // Image element scales the natural bitmap to its 72px box.
+            try { card.Icon = new BitmapImage(new Uri(iconUrl)); }
+            catch { }
+        });
+        return true;
+    }
+
+    // Filter-change fast lane: fetch icons for what's on screen right now,
+    // regardless of where the big background sweep happens to be. The sweep
+    // marks its whole queue IconRequested up front, so this path keys off
+    // Icon == null plus its own de-dupe set; a double fetch just hits the
+    // warm server cache.
+    private readonly HashSet<string> _priorityIconFetched = new();
+
+    private async void PrioritizeShownIcons()
+    {
+        var targets = ShownItems
+            .Where(i => i.Icon == null && string.IsNullOrEmpty(i.Entry.IconPath) == false && _priorityIconFetched.Add(i.ProtoRef))
+            .Take(150)
+            .ToList();
+        if (targets.Count == 0) return;
+
+        var ct = _iconCts?.Token ?? CancellationToken.None;
+        var s = SettingsService.Current;
+        try
+        {
+            using var client = new ServerApiClient(s.ServerBaseUrl, s.BearerToken, TimeSpan.FromSeconds(30));
+            using var gate = new SemaphoreSlim(8, 8);
+            string portraitBase = s.ServerBaseUrl.TrimEnd('/');
+
+            var tasks = targets.Select(async card =>
+            {
+                await gate.WaitAsync(ct);
+                try { await FetchIconCoreAsync(client, portraitBase, card, ct); }
+                catch { }
+                finally { gate.Release(); }
+            }).ToList();
+            await Task.WhenAll(tasks);
+        }
+        catch { /* best effort — the background sweep still covers everything */ }
     }
 
     // === Basket ============================================================

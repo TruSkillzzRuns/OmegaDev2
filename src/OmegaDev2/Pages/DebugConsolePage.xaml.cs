@@ -24,8 +24,10 @@ namespace OmegaDev2.Pages;
 // to Info level and see verbose activity.
 public sealed partial class DebugConsolePage : Page
 {
-    private const string ServerBaseUrl = "http://localhost:8080";
-    private const string BearerToken = "6A8D162E6DC12BEBEA63E4135EA9D7E8";
+    private static string ServerBaseUrl => Services.AppState.ServerUrl;
+    // Optional API token from settings — null means no Authorization header.
+    // Never hardcode a token here; this file ships in the public repo.
+    private static string? BearerToken => Services.SettingsService.Current.BearerToken;
     // Poll less aggressively in quiet mode — there's nothing changing most of
     // the time, so 1s is plenty. Show-all mode bumps to 250ms for responsiveness.
     private int _pollIntervalMs = 1000;
@@ -55,9 +57,19 @@ public sealed partial class DebugConsolePage : Page
         // crash because Toggled fires during init when no refs are bound yet.
         QuietModeToggle.IsOn = true;
         AutoScrollToggle.IsOn = true;
+        ServerUrlBox.Text = Services.AppState.ServerUrl;
         LogList.ItemsSource = _visible;
         Loaded += OnLoaded;
         Unloaded += (_, _) => StopStreaming();
+    }
+
+    private void ApplyServerUrl_Click(object sender, RoutedEventArgs e)
+    {
+        string url = ServerUrlBox.Text?.Trim();
+        if (string.IsNullOrEmpty(url)) return;
+        Services.AppState.ServerUrl = url;
+        SetStatus("Server URL applied.");
+        _ = StartStreamingAsync(); // reconnect against the new URL
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -86,7 +98,8 @@ public sealed partial class DebugConsolePage : Page
     private async Task PollLoopAsync(CancellationToken ct)
     {
         using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
-        http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", BearerToken);
+        if (!string.IsNullOrEmpty(BearerToken))
+            http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", BearerToken);
         int consecutiveErrors = 0;
         while (!ct.IsCancellationRequested)
         {

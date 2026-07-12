@@ -325,6 +325,17 @@ public sealed class ServerApiClient : IDisposable
     public Task<PhantomOpResponse?> PostPhantomSquadOpAsync(string playerName, string op, string name, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/squads", new { playerName, op, name }, ct);
 
+    public Task<PhantomOpResponse?> PostPhantomSquadSaveListAsync(string playerName, string name, object members, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/squads", new { playerName, op = "savelist", name, members }, ct);
+
+    // ---- Command Console ----
+    public Task<ConsoleExecResponse?> PostConsoleExecAsync(string command, string? playerName, CancellationToken ct = default)
+        => PostJsonAsync<ConsoleExecResponse>("webapi/console/exec", new { command, playerName }, ct);
+
+    // ---- Live Log Viewer ----
+    public Task<LogsTailResponse?> GetLogsTailAsync(int lines, CancellationToken ct = default)
+        => GetJsonAsync<LogsTailResponse>($"webapi/logs/tail?lines={lines}", ct);
+
     public void Dispose() => _http.Dispose();
 }
 
@@ -393,6 +404,33 @@ public sealed class PhantomSquadEntry
     public string Name { get; set; } = "";
     public System.Collections.Generic.List<string> Heroes { get; set; } = new();
     public System.Collections.Generic.List<int> Levels { get; set; } = new();
+    public System.Collections.Generic.List<PhantomSquadMemberEntry>? Members { get; set; }
+}
+
+public sealed class PhantomSquadMemberEntry
+{
+    public string AvatarRef { get; set; } = "";
+    public string HeroName { get; set; } = "";
+    public int Level { get; set; }
+    public bool LockLevel { get; set; }
+    public string? CostumeRef { get; set; }
+}
+
+public sealed class ConsoleExecResponse
+{
+    public bool Ok { get; set; }
+    public string? Command { get; set; }
+    public string? Output { get; set; }
+    public string? Error { get; set; }
+}
+
+public sealed class LogsTailResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? File { get; set; }
+    public int Count { get; set; }
+    public System.Collections.Generic.List<string> Lines { get; set; } = new();
 }
 
 public sealed class PhantomSpawnResponse

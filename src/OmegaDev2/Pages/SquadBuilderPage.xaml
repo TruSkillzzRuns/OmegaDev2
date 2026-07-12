@@ -1,0 +1,276 @@
+<Page
+    x:Class="OmegaDev2.Pages.SquadBuilderPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:OmegaDev2.Pages"
+    Background="{ThemeResource OmegaDev2.PageBackgroundBrush}">
+
+    <Grid Padding="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,14">
+            <TextBlock Text="Squad Builder"
+                       FontSize="32"
+                       FontWeight="SemiBold"
+                       Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+            <TextBlock Text="Design phantom squads visually — click heroes into the lineup, set level, lock and costume per slot, then save or spawn. Usernames and gear roll fresh at spawn time."
+                       FontSize="13"
+                       TextWrapping="Wrap"
+                       MaxWidth="960"
+                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+        </StackPanel>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="1"
+                Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                CornerRadius="6"
+                Padding="14,10"
+                Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button x:Name="LoadBtn" Content="Load Roster" Click="LoadRoster_Click" />
+                <TextBox x:Name="SearchBox"
+                         Width="220"
+                         PlaceholderText="search hero..."
+                         TextChanged="SearchBox_TextChanged"
+                         VerticalAlignment="Center" />
+                <TextBox x:Name="PlayerBox"
+                         Width="220"
+                         PlaceholderText="player (* = first online)"
+                         Text="*"
+                         VerticalAlignment="Center" />
+                <TextBlock x:Name="StatusText"
+                           VerticalAlignment="Center"
+                           Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Main: roster | lineup | saved squads -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="320" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Hero roster -->
+            <Border Grid.Column="0"
+                    Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                    CornerRadius="6"
+                    Padding="6"
+                    Margin="0,0,12,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Spacing="2" Margin="8,6,8,6">
+                        <TextBlock Text="HERO ROSTER"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   CharacterSpacing="180"
+                                   Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                        <TextBlock Text="click to add to lineup"
+                                   FontSize="10"
+                                   Opacity="0.55"
+                                   Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                    </StackPanel>
+                    <ListView x:Name="HeroList"
+                              Grid.Row="1"
+                              SelectionMode="None"
+                              IsItemClickEnabled="True"
+                              ItemClick="HeroList_ItemClick">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:PhantomHeroCard">
+                                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,2">
+                                    <Border Width="52" Height="40" CornerRadius="4"
+                                            Background="{ThemeResource OmegaDev2.PageBackgroundBrush}">
+                                        <Image Source="{x:Bind Portrait, Mode=OneWay}"
+                                               Stretch="UniformToFill" />
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center" Spacing="0">
+                                        <TextBlock Text="{x:Bind Name}" FontSize="13" />
+                                        <TextBlock Text="{x:Bind SubName}" FontSize="10" Opacity="0.55" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+            </Border>
+
+            <!-- Lineup -->
+            <Border Grid.Column="1"
+                    Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                    CornerRadius="6"
+                    Padding="12"
+                    Margin="0,0,12,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="LineupTitle"
+                                   Grid.Column="0"
+                                   Text="Lineup (0)"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                        <Button Grid.Column="1" Content="Clear Lineup" Click="ClearLineup_Click" />
+                    </Grid>
+
+                    <ListView x:Name="LineupList" Grid.Row="1" SelectionMode="None">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:LineupSlot">
+                                <Border Background="{ThemeResource OmegaDev2.PageBackgroundBrush}"
+                                        CornerRadius="6"
+                                        Padding="10,8"
+                                        Margin="0,3">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Width="64" Height="48" CornerRadius="4"
+                                                Margin="0,0,12,0"
+                                                VerticalAlignment="Center"
+                                                Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}">
+                                            <Image Source="{x:Bind Portrait, Mode=OneWay}" Stretch="UniformToFill" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                                            <TextBlock Text="{x:Bind HeroName}" FontSize="14" FontWeight="SemiBold" />
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <NumberBox Header="Level (0 = match)"
+                                                           Value="{x:Bind Level, Mode=TwoWay}"
+                                                           Minimum="0" Maximum="60"
+                                                           SpinButtonPlacementMode="Compact"
+                                                           Width="140" />
+                                                <CheckBox Content="Lock"
+                                                          IsChecked="{x:Bind LockLevel, Mode=TwoWay}"
+                                                          VerticalAlignment="Bottom" />
+                                                <ComboBox Header="Costume"
+                                                          ItemsSource="{x:Bind CostumeLabels, Mode=OneWay}"
+                                                          SelectedIndex="{x:Bind CostumeIndex, Mode=TwoWay}"
+                                                          Width="220" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <Button Grid.Column="2"
+                                                Content="✕"
+                                                FontSize="10"
+                                                Padding="8,4"
+                                                VerticalAlignment="Top"
+                                                Tag="{x:Bind SlotId}"
+                                                Click="RemoveSlot_Click" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <!-- Save / spawn -->
+                    <Grid Grid.Row="2" Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="SquadNameBox"
+                                 Grid.Column="0"
+                                 PlaceholderText="squad name (letters, digits, _ -)"
+                                 Margin="0,0,8,0" />
+                        <Button Grid.Column="1"
+                                Content="Save Squad"
+                                Click="SaveSquad_Click"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Margin="0,0,8,0" />
+                        <Button Grid.Column="2"
+                                Content="Save + Spawn"
+                                Click="SaveAndSpawn_Click" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Saved squads -->
+            <Border Grid.Column="2"
+                    Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                    CornerRadius="6"
+                    Padding="12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="Saved Squads"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                        <Button Grid.Column="1" Content="Refresh" FontSize="11" Click="RefreshSquads_Click" />
+                    </Grid>
+                    <ListView x:Name="SquadList" Grid.Row="1" SelectionMode="None">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:SquadRow">
+                                <Grid Margin="0,2" ToolTipService.ToolTip="{x:Bind HeroesTip}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind Name}" FontSize="13" />
+                                        <TextBlock Text="{x:Bind Detail}" FontSize="10" Opacity="0.55" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1"
+                                            Content="Edit"
+                                            FontSize="11"
+                                            Margin="0,0,6,0"
+                                            Tag="{x:Bind Name}"
+                                            Click="EditSquad_Click" />
+                                    <Button Grid.Column="2"
+                                            Content="Spawn"
+                                            FontSize="11"
+                                            Margin="0,0,6,0"
+                                            Tag="{x:Bind Name}"
+                                            Click="SpawnSquad_Click" />
+                                    <Button Grid.Column="3"
+                                            Content="✕"
+                                            FontSize="10"
+                                            Padding="6,2"
+                                            Tag="{x:Bind Name}"
+                                            Click="DeleteSquad_Click" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <TextBlock x:Name="SquadStatusText"
+                               Grid.Row="2"
+                               FontSize="11"
+                               Margin="0,8,0,0"
+                               TextWrapping="Wrap"
+                               Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Page>

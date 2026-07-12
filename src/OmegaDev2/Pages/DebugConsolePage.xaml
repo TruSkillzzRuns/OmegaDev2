@@ -148,6 +148,15 @@
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource StatTile}">
+                    <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBox x:Name="ServerUrlBox" Width="250" FontSize="13" VerticalAlignment="Center" />
+                            <Button Content="Apply" Click="ApplyServerUrl_Click" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="SERVER URL" Style="{StaticResource StatLabel}" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatTile}">
                     <StackPanel>
                         <TextBlock x:Name="TotalValue" Text="0" Style="{StaticResource StatValue}" />
                         <TextBlock Text="MESSAGES BUFFERED" Style="{StaticResource StatLabel}" />

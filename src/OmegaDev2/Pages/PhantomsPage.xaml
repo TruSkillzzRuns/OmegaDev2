@@ -195,7 +195,7 @@
                                       IsEnabled="False" />
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <NumberBox x:Name="CountBox" Header="Count" Value="5" Minimum="1" Maximum="50" SpinButtonPlacementMode="Compact" Width="110" />
-                                <NumberBox x:Name="LevelBox" Header="Level (0 = match)" Value="0" Minimum="0" Maximum="60" SpinButtonPlacementMode="Compact" Width="140" />
+                                <NumberBox x:Name="LevelBox" Header="Level (0 = match)" Value="0" Minimum="0" Maximum="60" SpinButtonPlacementMode="Compact" Width="180" />
                             </StackPanel>
                             <CheckBox x:Name="LockLevelCheck" Content="Lock level (no auto-level with player)" IsChecked="True" />
                             <Button x:Name="SpawnBtn"
@@ -235,7 +235,8 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBox x:Name="SquadNameBox"
                                          Grid.Column="0"
-                                         PlaceholderText="squad name (letters, digits, _ -)"
+                                         PlaceholderText="squad name"
+                                         ToolTipService.ToolTip="1-32 characters: letters, digits, _ or -"
                                          Margin="0,0,6,0" />
                                 <Button Grid.Column="1" Content="Save Current" Click="SaveSquad_Click" />
                             </Grid>

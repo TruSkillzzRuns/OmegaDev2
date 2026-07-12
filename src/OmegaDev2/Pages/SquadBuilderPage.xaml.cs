@@ -1,0 +1,378 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml.Navigation;
+using OmegaDev2.Services;
+
+namespace OmegaDev2.Pages;
+
+// Visual Squad Builder — click heroes from the roster into a lineup, tune
+// level / lock / costume per slot, then save via the squads "savelist" op
+// (an explicit member list, unlike the Phantoms page snapshot save). Saved
+// squads spawn through the same backend as `!phantom squad spawn`.
+
+public sealed class LineupSlot : INotifyPropertyChanged
+{
+    public event PropertyChangedEventHandler? PropertyChanged;
+    private void Raise([CallerMemberName] string? n = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
+
+    private static int s_nextId;
+    public string SlotId { get; } = (++s_nextId).ToString();
+
+    public PhantomHeroEntry Hero { get; }
+    public string HeroName => string.IsNullOrEmpty(Hero.DisplayName) ? Hero.Name : Hero.DisplayName!;
+
+    private BitmapImage? _portrait;
+    public BitmapImage? Portrait { get => _portrait; set { _portrait = value; Raise(); } }
+
+    private double _level;
+    public double Level { get => _level; set { if (_level != value) { _level = Math.Clamp(value, 0, 60); Raise(); } } }
+
+    private bool _lockLevel;
+    public bool LockLevel { get => _lockLevel; set { if (_lockLevel != value) { _lockLevel = value; Raise(); } } }
+
+    // Costume dropdown: index 0 = random, then the hero's costume pool.
+    public List<PhantomCostumeEntry> Costumes { get; private set; } = new();
+    private ObservableCollection<string> _costumeLabels = new() { "(random costume)" };
+    public ObservableCollection<string> CostumeLabels { get => _costumeLabels; private set { _costumeLabels = value; Raise(); } }
+
+    private int _costumeIndex;
+    public int CostumeIndex { get => _costumeIndex; set { if (_costumeIndex != value && value >= 0) { _costumeIndex = value; Raise(); } } }
+
+    public string? SelectedCostumeRef =>
+        _costumeIndex > 0 && _costumeIndex - 1 < Costumes.Count ? Costumes[_costumeIndex - 1].ProtoRef : null;
+
+    public LineupSlot(PhantomHeroEntry hero, int level, bool lockLevel)
+    {
+        Hero = hero;
+        _level = level;
+        _lockLevel = lockLevel;
+    }
+
+    public void SetCostumes(List<PhantomCostumeEntry> costumes, string? selectRef = null)
+    {
+        Costumes = costumes;
+        var labels = new ObservableCollection<string> { "(random costume)" };
+        int select = 0;
+        for (int i = 0; i < costumes.Count; i++)
+        {
+            labels.Add(string.IsNullOrEmpty(costumes[i].DisplayName) ? costumes[i].Name : costumes[i].DisplayName!);
+            if (selectRef != null && string.Equals(costumes[i].ProtoRef, selectRef, StringComparison.OrdinalIgnoreCase))
+                select = i + 1;
+        }
+        CostumeLabels = labels;
+        CostumeIndex = select;
+    }
+}
+
+public sealed partial class SquadBuilderPage : Page
+{
+    private readonly ServerApiClient _api = new();
+    private readonly List<PhantomHeroCard> _allHeroes = new();
+    public ObservableCollection<PhantomHeroCard> ShownHeroes { get; } = new();
+    public ObservableCollection<LineupSlot> Lineup { get; } = new();
+    public ObservableCollection<SquadRow> Squads { get; } = new();
+
+    // Costume pools cache: heroProtoRef → costumes. Shared across slots so
+    // adding the same hero twice doesn't refetch.
+    private readonly Dictionary<string, List<PhantomCostumeEntry>> _costumeCache = new(StringComparer.OrdinalIgnoreCase);
+
+    private bool _portraitSweepRunning;
+    private CancellationTokenSource? _pageCts = new();
+
+    public SquadBuilderPage()
+    {
+        InitializeComponent();
+        HeroList.ItemsSource = ShownHeroes;
+        LineupList.ItemsSource = Lineup;
+        SquadList.ItemsSource = Squads;
+        Lineup.CollectionChanged += (_, _) => LineupTitle.Text = $"Lineup ({Lineup.Count})";
+    }
+
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        _pageCts?.Cancel();
+        base.OnNavigatedFrom(e);
+    }
+
+    private string TargetPlayer => string.IsNullOrWhiteSpace(PlayerBox.Text) ? "*" : PlayerBox.Text.Trim();
+
+    // ---------------- Roster ----------------
+
+    private async void LoadRoster_Click(object sender, RoutedEventArgs e)
+    {
+        LoadBtn.IsEnabled = false;
+        StatusText.Text = "loading roster…";
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.GetPhantomHeroesAsync();
+            if (resp == null || resp.Heroes.Count == 0)
+            {
+                StatusText.Text = "no heroes — server offline?";
+                return;
+            }
+
+            _allHeroes.Clear();
+            foreach (var hero in resp.Heroes)
+                _allHeroes.Add(new PhantomHeroCard(hero));
+            ApplyHeroFilter();
+            StatusText.Text = $"{resp.TotalHeroes} heroes";
+
+            _ = RunPortraitSweepAsync();
+            await RefreshSquadsAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = $"error: {ex.Message}";
+        }
+        finally
+        {
+            LoadBtn.IsEnabled = true;
+        }
+    }
+
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyHeroFilter();
+
+    private void ApplyHeroFilter()
+    {
+        string q = SearchBox.Text?.Trim() ?? "";
+        ShownHeroes.Clear();
+        foreach (var card in _allHeroes)
+        {
+            if (q.Length > 0 &&
+                card.Name.Contains(q, StringComparison.OrdinalIgnoreCase) == false &&
+                card.Entry.Name.Contains(q, StringComparison.OrdinalIgnoreCase) == false)
+                continue;
+            ShownHeroes.Add(card);
+        }
+    }
+
+    private async Task RunPortraitSweepAsync()
+    {
+        if (_portraitSweepRunning) return;
+        _portraitSweepRunning = true;
+        var ct = _pageCts?.Token ?? CancellationToken.None;
+        try
+        {
+            string portraitBase = AppState.ServerUrl.TrimEnd('/');
+            using var throttle = new SemaphoreSlim(8);
+            var tasks = new List<Task>();
+            foreach (var card in _allHeroes)
+            {
+                var candidates = card.Entry.PortraitCandidates is { Count: > 0 }
+                    ? card.Entry.PortraitCandidates
+                    : (string.IsNullOrEmpty(card.Entry.PortraitPath) ? null : new List<string> { card.Entry.PortraitPath! });
+                if (card.PortraitRequested || candidates == null) continue;
+                card.PortraitRequested = true;
+                await throttle.WaitAsync(ct);
+                tasks.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        foreach (string candidate in candidates)
+                        {
+                            byte[]? png = await _api.GetTexturePngAsync(candidate, ct);
+                            if (png == null || png.Length == 0) continue;
+                            string url = $"{portraitBase}/webapi/texbyname?name={Uri.EscapeDataString(candidate)}";
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                try
+                                {
+                                    var bmp = new BitmapImage(new Uri(url)) { DecodePixelWidth = 96 };
+                                    card.Portrait = bmp;
+                                    // Any lineup slots already holding this hero pick it up too.
+                                    foreach (var slot in Lineup)
+                                        if (string.Equals(slot.Hero.ProtoRef, card.Entry.ProtoRef, StringComparison.OrdinalIgnoreCase))
+                                            slot.Portrait = bmp;
+                                }
+                                catch { }
+                            });
+                            break;
+                        }
+                    }
+                    catch { }
+                    finally { throttle.Release(); }
+                }, ct));
+            }
+            await Task.WhenAll(tasks);
+        }
+        catch (OperationCanceledException) { }
+        catch { }
+        finally { _portraitSweepRunning = false; }
+    }
+
+    // ---------------- Lineup ----------------
+
+    private async void HeroList_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is not PhantomHeroCard card) return;
+
+        var slot = new LineupSlot(card.Entry, level: 0, lockLevel: false) { Portrait = card.Portrait };
+        Lineup.Add(slot);
+        await LoadCostumesIntoSlotAsync(slot, null);
+    }
+
+    private async Task LoadCostumesIntoSlotAsync(LineupSlot slot, string? selectRef)
+    {
+        try
+        {
+            if (_costumeCache.TryGetValue(slot.Hero.ProtoRef, out var cached) == false)
+            {
+                _api.BaseUrl = AppState.ServerUrl;
+                var resp = await _api.GetPhantomCostumesAsync(slot.Hero.ProtoRef);
+                cached = resp?.Costumes ?? new List<PhantomCostumeEntry>();
+                _costumeCache[slot.Hero.ProtoRef] = cached;
+            }
+            slot.SetCostumes(cached, selectRef);
+        }
+        catch
+        {
+            slot.SetCostumes(new List<PhantomCostumeEntry>(), null);
+        }
+    }
+
+    private void RemoveSlot_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not string slotId) return;
+        var slot = Lineup.FirstOrDefault(s => s.SlotId == slotId);
+        if (slot != null) Lineup.Remove(slot);
+    }
+
+    private void ClearLineup_Click(object sender, RoutedEventArgs e) => Lineup.Clear();
+
+    // ---------------- Save / spawn ----------------
+
+    private object[] BuildMemberPayload()
+        => Lineup.Select(s => (object)new
+        {
+            avatarRef = s.Hero.ProtoRef,
+            level = (int)s.Level,
+            lockLevel = s.LockLevel,
+            costumeRef = s.SelectedCostumeRef,
+        }).ToArray();
+
+    private async Task<bool> SaveLineupAsync(string name)
+    {
+        if (Lineup.Count == 0) { SquadStatusText.Text = "lineup is empty — click heroes to add them"; return false; }
+
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.PostPhantomSquadSaveListAsync(TargetPlayer, name, BuildMemberPayload());
+            string message = resp?.Message ?? resp?.Error ?? "no response";
+            await RefreshSquadsAsync();
+            SquadStatusText.Text = message;
+            return resp?.Message != null && resp.Message.Contains("saved", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            SquadStatusText.Text = $"error: {ex.Message}";
+            return false;
+        }
+    }
+
+    private async void SaveSquad_Click(object sender, RoutedEventArgs e)
+    {
+        string name = SquadNameBox.Text?.Trim() ?? "";
+        if (name.Length == 0) { SquadStatusText.Text = "enter a squad name first"; return; }
+        await SaveLineupAsync(name);
+    }
+
+    private async void SaveAndSpawn_Click(object sender, RoutedEventArgs e)
+    {
+        string name = SquadNameBox.Text?.Trim() ?? "";
+        if (name.Length == 0) { SquadStatusText.Text = "enter a squad name first"; return; }
+        if (await SaveLineupAsync(name) == false) return;
+        await SquadOpAsync("spawn", name);
+    }
+
+    // ---------------- Saved squads ----------------
+
+    private async void RefreshSquads_Click(object sender, RoutedEventArgs e) => await RefreshSquadsAsync();
+
+    private async Task RefreshSquadsAsync()
+    {
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.GetPhantomSquadsAsync(TargetPlayer);
+            Squads.Clear();
+            if (resp == null || resp.Ok == false)
+            {
+                SquadStatusText.Text = resp?.Error ?? "squad list failed";
+                return;
+            }
+            foreach (var s in resp.Squads)
+                Squads.Add(new SquadRow(s));
+        }
+        catch (Exception ex)
+        {
+            SquadStatusText.Text = $"error: {ex.Message}";
+        }
+    }
+
+    private async void EditSquad_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not string name) return;
+        var row = Squads.FirstOrDefault(s => s.Name == name);
+        if (row?.Entry.Members == null || row.Entry.Members.Count == 0)
+        {
+            SquadStatusText.Text = "squad has no member data — refresh and retry";
+            return;
+        }
+        if (_allHeroes.Count == 0)
+        {
+            SquadStatusText.Text = "load the roster first";
+            return;
+        }
+
+        Lineup.Clear();
+        SquadNameBox.Text = name;
+        foreach (var m in row.Entry.Members)
+        {
+            var card = _allHeroes.FirstOrDefault(h => string.Equals(h.Entry.ProtoRef, m.AvatarRef, StringComparison.OrdinalIgnoreCase));
+            if (card == null) continue;
+            var slot = new LineupSlot(card.Entry, m.LockLevel ? m.Level : 0, m.LockLevel) { Portrait = card.Portrait };
+            Lineup.Add(slot);
+            await LoadCostumesIntoSlotAsync(slot, m.CostumeRef);
+        }
+        SquadStatusText.Text = $"editing '{name}' — Save Squad overwrites it";
+    }
+
+    private async void SpawnSquad_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not string name) return;
+        await SquadOpAsync("spawn", name);
+    }
+
+    private async void DeleteSquad_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not string name) return;
+        await SquadOpAsync("delete", name);
+    }
+
+    private async Task SquadOpAsync(string op, string name)
+    {
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.PostPhantomSquadOpAsync(TargetPlayer, op, name);
+            string message = resp?.Message ?? resp?.Error ?? "no response";
+            await RefreshSquadsAsync();
+            SquadStatusText.Text = message;
+        }
+        catch (Exception ex)
+        {
+            SquadStatusText.Text = $"error: {ex.Message}";
+        }
+    }
+}

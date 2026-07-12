@@ -1,0 +1,97 @@
+<Page
+    x:Class="OmegaDev2.Pages.LogViewerPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:OmegaDev2.Pages"
+    Background="{ThemeResource OmegaDev2.PageBackgroundBrush}">
+
+    <Page.Resources>
+        <Style x:Key="LogRowContainerStyle" TargetType="ListViewItem">
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="8,1" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+    </Page.Resources>
+
+    <Grid Padding="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,14">
+            <TextBlock Text="Live Log Viewer"
+                       FontSize="32"
+                       FontWeight="SemiBold"
+                       Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+            <TextBlock x:Name="SubText"
+                       Text="Tails the newest server log file. Auto-refreshes every 2 seconds while following."
+                       FontSize="13"
+                       TextWrapping="Wrap"
+                       MaxWidth="900"
+                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+        </StackPanel>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="1"
+                Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                CornerRadius="6"
+                Padding="14,10"
+                Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <ToggleButton x:Name="FollowToggle"
+                              Content="Following"
+                              IsChecked="True"
+                              Checked="FollowToggle_Checked"
+                              Unchecked="FollowToggle_Unchecked" />
+                <Button Content="Refresh Now" Click="RefreshNow_Click" />
+                <ComboBox x:Name="LinesCombo"
+                          Header=""
+                          Width="150"
+                          VerticalAlignment="Center"
+                          SelectionChanged="LinesCombo_SelectionChanged">
+                    <ComboBoxItem Content="200 lines" IsSelected="True" />
+                    <ComboBoxItem Content="500 lines" />
+                    <ComboBoxItem Content="1000 lines" />
+                    <ComboBoxItem Content="2000 lines" />
+                </ComboBox>
+                <TextBox x:Name="FilterBox"
+                         Width="240"
+                         PlaceholderText="filter text..."
+                         TextChanged="FilterBox_TextChanged"
+                         VerticalAlignment="Center" />
+                <CheckBox x:Name="ErrorsOnlyCheck"
+                          Content="Errors / warnings only"
+                          Checked="ErrorsOnly_Changed"
+                          Unchecked="ErrorsOnly_Changed"
+                          VerticalAlignment="Center" />
+                <TextBlock x:Name="StatusText"
+                           VerticalAlignment="Center"
+                           Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Log lines -->
+        <Border Grid.Row="2"
+                Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                CornerRadius="6"
+                Padding="4">
+            <ListView x:Name="LogList"
+                      SelectionMode="None"
+                      ItemContainerStyle="{StaticResource LogRowContainerStyle}">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="local:LogLine">
+                        <TextBlock Text="{x:Bind Text}"
+                                   FontFamily="Consolas"
+                                   FontSize="12"
+                                   TextWrapping="NoWrap"
+                                   IsTextSelectionEnabled="True"
+                                   Foreground="{x:Bind LineBrush}" />
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Border>
+    </Grid>
+</Page>
