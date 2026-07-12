@@ -165,6 +165,10 @@
                                                           ItemsSource="{x:Bind CostumeLabels, Mode=OneWay}"
                                                           SelectedIndex="{x:Bind CostumeIndex, Mode=TwoWay}"
                                                           Width="220" />
+                                                <CheckBox Content="Invincible"
+                                                          IsChecked="{x:Bind Invincible, Mode=TwoWay}"
+                                                          VerticalAlignment="Bottom"
+                                                          ToolTipService.ToolTip="Cannot be downed or killed" />
                                             </StackPanel>
                                         </StackPanel>
                                         <Button Grid.Column="2"

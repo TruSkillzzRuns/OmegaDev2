@@ -447,6 +447,7 @@ public sealed class PhantomSquadMemberEntry
     public int Level { get; set; }
     public bool LockLevel { get; set; }
     public string? CostumeRef { get; set; }
+    public bool Invincible { get; set; }
 }
 
 public sealed class EnemyPhantomStatusResponse

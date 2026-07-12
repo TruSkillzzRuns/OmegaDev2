@@ -39,6 +39,9 @@ public sealed class LineupSlot : INotifyPropertyChanged
     private bool _lockLevel;
     public bool LockLevel { get => _lockLevel; set { if (_lockLevel != value) { _lockLevel = value; Raise(); } } }
 
+    private bool _invincible;
+    public bool Invincible { get => _invincible; set { if (_invincible != value) { _invincible = value; Raise(); } } }
+
     // Costume dropdown: index 0 = random, then the hero's costume pool.
     public List<PhantomCostumeEntry> Costumes { get; private set; } = new();
     private ObservableCollection<string> _costumeLabels = new() { "(random costume)" };
@@ -50,11 +53,12 @@ public sealed class LineupSlot : INotifyPropertyChanged
     public string? SelectedCostumeRef =>
         _costumeIndex > 0 && _costumeIndex - 1 < Costumes.Count ? Costumes[_costumeIndex - 1].ProtoRef : null;
 
-    public LineupSlot(PhantomHeroEntry hero, int level, bool lockLevel)
+    public LineupSlot(PhantomHeroEntry hero, int level, bool lockLevel, bool invincible = false)
     {
         Hero = hero;
         _level = level;
         _lockLevel = lockLevel;
+        _invincible = invincible;
     }
 
     public void SetCostumes(List<PhantomCostumeEntry> costumes, string? selectRef = null)
@@ -258,6 +262,7 @@ public sealed partial class SquadBuilderPage : Page
             level = (int)s.Level,
             lockLevel = s.LockLevel,
             costumeRef = s.SelectedCostumeRef,
+            invincible = s.Invincible,
         }).ToArray();
 
     private async Task<bool> SaveLineupAsync(string name)
@@ -341,7 +346,7 @@ public sealed partial class SquadBuilderPage : Page
         {
             var card = _allHeroes.FirstOrDefault(h => string.Equals(h.Entry.ProtoRef, m.AvatarRef, StringComparison.OrdinalIgnoreCase));
             if (card == null) continue;
-            var slot = new LineupSlot(card.Entry, m.LockLevel ? m.Level : 0, m.LockLevel) { Portrait = card.Portrait };
+            var slot = new LineupSlot(card.Entry, m.LockLevel ? m.Level : 0, m.LockLevel, m.Invincible) { Portrait = card.Portrait };
             Lineup.Add(slot);
             await LoadCostumesIntoSlotAsync(slot, m.CostumeRef);
         }
