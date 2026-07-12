@@ -1,0 +1,167 @@
+<Page
+    x:Class="OmegaDev2.Pages.AccountManagerPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="{ThemeResource OmegaDev2.PageBackgroundBrush}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Padding="24,20,24,16" MaxWidth="1100" HorizontalAlignment="Left">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,14">
+                <TextBlock Text="Account Manager"
+                           FontSize="32"
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                <TextBlock Text="Create and administer server accounts without touching the chat window — create, rename, reset passwords, promote, ban and whitelist."
+                           FontSize="13"
+                           TextWrapping="Wrap"
+                           MaxWidth="900"
+                           Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+            </StackPanel>
+
+            <!-- Cards -->
+            <Grid Grid.Row="1" Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Create -->
+                <Border Grid.Column="0"
+                        Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                        CornerRadius="6"
+                        Padding="16,14"
+                        VerticalAlignment="Top">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Create Account"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                        <TextBox x:Name="CreateEmailBox" Header="Email (login)" PlaceholderText="player@local" />
+                        <TextBox x:Name="CreateNameBox" Header="Player name" PlaceholderText="in-game name" />
+                        <PasswordBox x:Name="CreatePasswordBox" Header="Password" />
+                        <Button x:Name="CreateBtn"
+                                Content="Create Account"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Click="Create_Click" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Manage -->
+                <Border Grid.Column="2"
+                        Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                        CornerRadius="6"
+                        Padding="16,14"
+                        VerticalAlignment="Top">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Manage Account"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="ManageEmailBox"
+                                     Grid.Column="0"
+                                     Header="Account email"
+                                     PlaceholderText="who are we managing?"
+                                     Margin="0,0,8,0" />
+                            <Button Grid.Column="1"
+                                    Content="Info"
+                                    VerticalAlignment="Bottom"
+                                    Click="Info_Click" />
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="NewNameBox"
+                                     Grid.Column="0"
+                                     Header="New player name"
+                                     Margin="0,0,8,0" />
+                            <Button Grid.Column="1" Content="Rename" VerticalAlignment="Bottom" Click="Rename_Click" />
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <PasswordBox x:Name="NewPasswordBox"
+                                         Grid.Column="0"
+                                         Header="New password"
+                                         Margin="0,0,8,0" />
+                            <Button Grid.Column="1" Content="Set" VerticalAlignment="Bottom" Click="SetPassword_Click" />
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="UserLevelCombo"
+                                      Grid.Column="0"
+                                      Header="User level"
+                                      HorizontalAlignment="Stretch"
+                                      Margin="0,0,8,0">
+                                <ComboBoxItem Content="0 — User" IsSelected="True" />
+                                <ComboBoxItem Content="1 — Moderator" />
+                                <ComboBoxItem Content="2 — Admin" />
+                            </ComboBox>
+                            <Button Grid.Column="1" Content="Apply" VerticalAlignment="Bottom" Click="SetUserLevel_Click" />
+                        </Grid>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Ban" Click="Ban_Click" />
+                            <Button Content="Unban" Click="Unban_Click" />
+                            <Button Content="Whitelist" Click="Whitelist_Click" />
+                            <Button Content="Unwhitelist" Click="Unwhitelist_Click" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Output -->
+            <Border Grid.Row="2"
+                    Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                    CornerRadius="6"
+                    Padding="10">
+                <StackPanel Spacing="6">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0"
+                                   Text="RESULT LOG"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   CharacterSpacing="180"
+                                   VerticalAlignment="Center"
+                                   Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                        <Button Grid.Column="1" Content="Clear" FontSize="11" Click="ClearOutput_Click" />
+                    </Grid>
+                    <ScrollViewer x:Name="OutputScroll" MaxHeight="240" VerticalScrollBarVisibility="Auto">
+                        <TextBlock x:Name="OutputText"
+                                   FontFamily="Consolas"
+                                   FontSize="12.5"
+                                   TextWrapping="Wrap"
+                                   IsTextSelectionEnabled="True"
+                                   Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</Page>

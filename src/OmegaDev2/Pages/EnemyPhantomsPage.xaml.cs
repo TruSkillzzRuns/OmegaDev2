@@ -1,0 +1,252 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml.Navigation;
+using OmegaDev2.Services;
+using Windows.UI;
+
+namespace OmegaDev2.Pages;
+
+public sealed class EnemyRow
+{
+    private static readonly Brush s_alive = new SolidColorBrush(Color.FromArgb(0xFF, 0xE8, 0x5C, 0x5C));
+    private static readonly Brush s_dead = new SolidColorBrush(Color.FromArgb(0xFF, 0x55, 0x55, 0x60));
+
+    public string Title { get; }
+    public string HealthText { get; }
+    public double BarWidth { get; }
+    public Brush BarBrush { get; }
+
+    public EnemyRow(EnemyPhantomEntry e)
+    {
+        Title = $"{e.HeroName}  ·  level {e.Level}";
+        HealthText = e.Dead ? "DOWN" : $"{e.HealthPct}%";
+        BarWidth = e.Dead ? 0 : Math.Max(2.0, 3.6 * e.HealthPct);
+        BarBrush = e.Dead ? s_dead : s_alive;
+    }
+}
+
+// Enemy Phantoms — hostile AI heroes. Roster on the left, live hostiles
+// with health bars in the middle (1s poll), spawn controls on the right.
+public sealed partial class EnemyPhantomsPage : Page
+{
+    private readonly ServerApiClient _api = new();
+    private readonly List<PhantomHeroCard> _allHeroes = new();
+    public ObservableCollection<PhantomHeroCard> ShownHeroes { get; } = new();
+    public ObservableCollection<EnemyRow> Enemies { get; } = new();
+
+    private PhantomHeroCard? _selectedHero;
+    private bool _portraitSweepRunning;
+    private bool _pollInFlight;
+    private CancellationTokenSource? _pageCts = new();
+    private readonly DispatcherQueueTimer _timer;
+
+    public EnemyPhantomsPage()
+    {
+        _timer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+        _timer.Interval = TimeSpan.FromSeconds(1);
+        _timer.Tick += async (_, _) => await PollEnemiesAsync();
+
+        InitializeComponent();
+        HeroList.ItemsSource = ShownHeroes;
+        EnemyList.ItemsSource = Enemies;
+
+        _timer.Start();
+    }
+
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        _timer.Stop();
+        _pageCts?.Cancel();
+        base.OnNavigatedFrom(e);
+    }
+
+    private string TargetPlayer => string.IsNullOrWhiteSpace(PlayerBox.Text) ? "*" : PlayerBox.Text.Trim();
+
+    // ---------------- Roster ----------------
+
+    private async void LoadRoster_Click(object sender, RoutedEventArgs e)
+    {
+        LoadBtn.IsEnabled = false;
+        StatusText.Text = "loading roster…";
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.GetPhantomHeroesAsync();
+            if (resp == null || resp.Heroes.Count == 0)
+            {
+                StatusText.Text = "no heroes — server offline?";
+                return;
+            }
+
+            _allHeroes.Clear();
+            foreach (var hero in resp.Heroes)
+                _allHeroes.Add(new PhantomHeroCard(hero));
+            ApplyHeroFilter();
+            StatusText.Text = $"{resp.TotalHeroes} heroes";
+
+            _ = RunPortraitSweepAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = $"error: {ex.Message}";
+        }
+        finally
+        {
+            LoadBtn.IsEnabled = true;
+        }
+    }
+
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyHeroFilter();
+
+    private void ApplyHeroFilter()
+    {
+        string q = SearchBox.Text?.Trim() ?? "";
+        ShownHeroes.Clear();
+        foreach (var card in _allHeroes)
+        {
+            if (q.Length > 0 &&
+                card.Name.Contains(q, StringComparison.OrdinalIgnoreCase) == false &&
+                card.Entry.Name.Contains(q, StringComparison.OrdinalIgnoreCase) == false)
+                continue;
+            ShownHeroes.Add(card);
+        }
+    }
+
+    private async Task RunPortraitSweepAsync()
+    {
+        if (_portraitSweepRunning) return;
+        _portraitSweepRunning = true;
+        var ct = _pageCts?.Token ?? CancellationToken.None;
+        try
+        {
+            string portraitBase = AppState.ServerUrl.TrimEnd('/');
+            using var throttle = new SemaphoreSlim(8);
+            var tasks = new List<Task>();
+            foreach (var card in _allHeroes)
+            {
+                var candidates = card.Entry.PortraitCandidates is { Count: > 0 }
+                    ? card.Entry.PortraitCandidates
+                    : (string.IsNullOrEmpty(card.Entry.PortraitPath) ? null : new List<string> { card.Entry.PortraitPath! });
+                if (card.PortraitRequested || candidates == null) continue;
+                card.PortraitRequested = true;
+                await throttle.WaitAsync(ct);
+                tasks.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        foreach (string candidate in candidates)
+                        {
+                            byte[]? png = await _api.GetTexturePngAsync(candidate, ct);
+                            if (png == null || png.Length == 0) continue;
+                            string url = $"{portraitBase}/webapi/texbyname?name={Uri.EscapeDataString(candidate)}";
+                            DispatcherQueue.TryEnqueue(() =>
+                            {
+                                try { card.Portrait = new BitmapImage(new Uri(url)) { DecodePixelWidth = 96 }; }
+                                catch { }
+                            });
+                            break;
+                        }
+                    }
+                    catch { }
+                    finally { throttle.Release(); }
+                }, ct));
+            }
+            await Task.WhenAll(tasks);
+        }
+        catch (OperationCanceledException) { }
+        catch { }
+        finally { _portraitSweepRunning = false; }
+    }
+
+    private void HeroList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        _selectedHero = HeroList.SelectedItem as PhantomHeroCard;
+        SelectedHeroText.Text = _selectedHero?.Name ?? "(random heroes)";
+    }
+
+    private void ClearHeroSelection_Click(object sender, RoutedEventArgs e) => HeroList.SelectedItem = null;
+
+    // ---------------- Spawn / clear ----------------
+
+    private async void Spawn_Click(object sender, RoutedEventArgs e)
+    {
+        SpawnBtn.IsEnabled = false;
+        SpawnStatusText.Text = "spawning hostiles…";
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.PostEnemyPhantomSpawnAsync(new
+            {
+                playerName = TargetPlayer,
+                heroes = new[]
+                {
+                    new
+                    {
+                        avatarRef = _selectedHero?.Entry.ProtoRef,
+                        level = (int)LevelBox.Value,
+                        count = (int)CountBox.Value,
+                    },
+                },
+            });
+
+            if (resp == null)
+                SpawnStatusText.Text = "no response from server";
+            else if (string.IsNullOrEmpty(resp.Error) == false)
+                SpawnStatusText.Text = resp.Error;
+            else
+                SpawnStatusText.Text = resp.Failed > 0
+                    ? $"spawned {resp.Spawned}, failed {resp.Failed}: {resp.FirstError}"
+                    : $"{resp.Spawned} hostile(s) inbound — good luck";
+
+            await PollEnemiesAsync();
+        }
+        catch (Exception ex)
+        {
+            SpawnStatusText.Text = $"error: {ex.Message}";
+        }
+        finally
+        {
+            SpawnBtn.IsEnabled = true;
+        }
+    }
+
+    private async void ClearAll_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.PostEnemyPhantomClearAsync(TargetPlayer);
+            StatusText.Text = resp != null ? $"cleared {resp.Removed}" : "no response";
+            await PollEnemiesAsync();
+        }
+        catch (Exception ex) { StatusText.Text = $"error: {ex.Message}"; }
+    }
+
+    // ---------------- Live hostiles ----------------
+
+    private async Task PollEnemiesAsync()
+    {
+        if (_pollInFlight) return;
+        _pollInFlight = true;
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.GetEnemyPhantomStatusAsync(TargetPlayer);
+            Enemies.Clear();
+            if (resp == null || resp.Ok == false) return;
+            foreach (var enemy in resp.Enemies.OrderByDescending(x => x.HealthPct))
+                Enemies.Add(new EnemyRow(enemy));
+        }
+        catch { /* poll again next second */ }
+        finally { _pollInFlight = false; }
+    }
+}

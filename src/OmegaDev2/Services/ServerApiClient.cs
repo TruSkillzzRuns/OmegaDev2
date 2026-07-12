@@ -328,6 +328,39 @@ public sealed class ServerApiClient : IDisposable
     public Task<PhantomOpResponse?> PostPhantomSquadSaveListAsync(string playerName, string name, object members, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/squads", new { playerName, op = "savelist", name, members }, ct);
 
+    // ---- Arena: Enemy Phantoms + Wave Director ----
+    public Task<PhantomSpawnResponse?> PostEnemyPhantomSpawnAsync(object body, CancellationToken ct = default)
+        => PostJsonAsync<PhantomSpawnResponse>("webapi/arena/enemyphantoms/spawn", body, ct);
+
+    public Task<PhantomOpResponse?> PostEnemyPhantomClearAsync(string playerName, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/arena/enemyphantoms/clear", new { playerName }, ct);
+
+    public Task<EnemyPhantomStatusResponse?> GetEnemyPhantomStatusAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<EnemyPhantomStatusResponse>($"webapi/arena/enemyphantoms/status?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
+    public Task<PhantomOpResponse?> PostWavesStartAsync(object body, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/arena/waves/start", body, ct);
+
+    public Task<PhantomOpResponse?> PostWavesStopAsync(string playerName, bool cleanup, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/arena/waves/stop", new { playerName, cleanup }, ct);
+
+    public Task<WavesStatusResponse?> GetWavesStatusAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<WavesStatusResponse>($"webapi/arena/waves/status?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
+    // ---- Stash Manager ----
+    public Task<InventoryResponse?> GetInventoryAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<InventoryResponse>($"webapi/inventory?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
+    public Task<PhantomOpResponse?> PostInventoryDeleteAsync(string playerName, string entityId, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/inventory/delete", new { playerName, entityId }, ct);
+
+    // ---- DPS Meter ----
+    public Task<DpsResponse?> GetDpsAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<DpsResponse>($"webapi/dps?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
+    public Task<PhantomOpResponse?> PostDpsResetAsync(CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/dps/reset", new { }, ct);
+
     // ---- Command Console ----
     public Task<ConsoleExecResponse?> PostConsoleExecAsync(string command, string? playerName, CancellationToken ct = default)
         => PostJsonAsync<ConsoleExecResponse>("webapi/console/exec", new { command, playerName }, ct);
@@ -416,6 +449,94 @@ public sealed class PhantomSquadMemberEntry
     public string? CostumeRef { get; set; }
 }
 
+public sealed class EnemyPhantomStatusResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public int Count { get; set; }
+    public System.Collections.Generic.List<EnemyPhantomEntry> Enemies { get; set; } = new();
+}
+
+public sealed class EnemyPhantomEntry
+{
+    public string HeroName { get; set; } = "";
+    public int Level { get; set; }
+    public int HealthPct { get; set; }
+    public bool Dead { get; set; }
+}
+
+public sealed class WavesStatusResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public WaveStatusEntry? Status { get; set; }
+}
+
+public sealed class WaveStatusEntry
+{
+    public bool Active { get; set; }
+    public string State { get; set; } = "";
+    public int Wave { get; set; }
+    public int TotalWaves { get; set; }
+    public int Alive { get; set; }
+    public int Kills { get; set; }
+    public int SpawnedTotal { get; set; }
+    public long RunSeconds { get; set; }
+    public long IntermissionRemainingMs { get; set; }
+}
+
+public sealed class InventoryResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Player { get; set; }
+    public int TotalItems { get; set; }
+    public System.Collections.Generic.List<InventoryContainer> Containers { get; set; } = new();
+}
+
+public sealed class InventoryContainer
+{
+    public string Name { get; set; } = "";
+    public string? Category { get; set; }
+    public int Capacity { get; set; }
+    public int Count { get; set; }
+    public System.Collections.Generic.List<InventoryItemEntry> Items { get; set; } = new();
+}
+
+public sealed class InventoryItemEntry
+{
+    public string EntityId { get; set; } = "";
+    public string ProtoRef { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Path { get; set; } = "";
+    public string? Rarity { get; set; }
+    public int RarityTier { get; set; }
+    public int Stack { get; set; }
+    public int Level { get; set; }
+    public int Slot { get; set; }
+    public string? IconPath { get; set; }
+}
+
+public sealed class DpsResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Player { get; set; }
+    public long SecondsSinceReset { get; set; }
+    public System.Collections.Generic.List<DpsCombatant> Combatants { get; set; } = new();
+}
+
+public sealed class DpsCombatant
+{
+    public string Name { get; set; } = "";
+    public bool IsPhantom { get; set; }
+    public long Total { get; set; }
+    public double Dps10 { get; set; }
+    public double Dps60 { get; set; }
+    public double DpsOverall { get; set; }
+    public long SecondsSinceLastHit { get; set; }
+}
+
 public sealed class ConsoleExecResponse
 {
     public bool Ok { get; set; }
@@ -473,6 +594,8 @@ public sealed class EnemyCatalogEntry
 {
     public string Name { get; set; } = "";
     public string Path { get; set; } = "";
+    // Server pins the JSON property name to "ref" (JS-friendly short name).
+    [System.Text.Json.Serialization.JsonPropertyName("ref")]
     public string ProtoRef { get; set; } = "";
     public string PortraitPath { get; set; } = "";
     public string Faction { get; set; } = "";
