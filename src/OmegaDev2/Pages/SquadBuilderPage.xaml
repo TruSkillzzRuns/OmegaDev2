@@ -176,6 +176,11 @@
                                                           IsChecked="{x:Bind Invincible, Mode=TwoWay}"
                                                           VerticalAlignment="Bottom"
                                                           ToolTipService.ToolTip="Cannot be downed or killed" />
+                                                <Button Content="Rotation…"
+                                                        VerticalAlignment="Bottom"
+                                                        Tag="{x:Bind SlotId}"
+                                                        Click="OpenRotation_Click"
+                                                        ToolTipService.ToolTip="Pick a preferred power for this hero (applies to every phantom of this hero, not just this squad)" />
                                             </StackPanel>
                                         </StackPanel>
                                         <Button Grid.Column="2"

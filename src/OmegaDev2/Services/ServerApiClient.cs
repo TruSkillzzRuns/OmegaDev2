@@ -346,6 +346,13 @@ public sealed class ServerApiClient : IDisposable
         => PostJsonAsync<RogueEncounterStatusResponse>("webapi/phantoms/rogue-encounter",
             new { playerName, enabled, trigger = triggerNow }, ct);
 
+    // ---- Skill Rotation ----
+    public Task<RotationResponse?> GetRotationAsync(string player, string heroRef, CancellationToken ct = default)
+        => GetJsonAsync<RotationResponse>($"webapi/phantoms/rotation?player={Uri.EscapeDataString(player ?? "*")}&hero={Uri.EscapeDataString(heroRef ?? "")}", ct);
+
+    public Task<PhantomOpResponse?> PostRotationAsync(string playerName, string heroRef, string? powerRef, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/rotation", new { playerName, heroRef, powerRef }, ct);
+
     // ---- Nemesis ----
     public Task<NemesisListResponse?> GetNemesisListAsync(string player, CancellationToken ct = default)
         => GetJsonAsync<NemesisListResponse>($"webapi/phantoms/nemesis?player={Uri.EscapeDataString(player ?? "*")}", ct);
@@ -482,6 +489,24 @@ public sealed class EnemyPhantomEntry
     public int Level { get; set; }
     public int HealthPct { get; set; }
     public bool Dead { get; set; }
+}
+
+public sealed class RotationResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string HeroRef { get; set; } = string.Empty;
+    public string HeroName { get; set; } = string.Empty;
+    public string PreferredPower { get; set; } = string.Empty;
+    public List<RotationPowerEntry> Powers { get; set; } = new();
+}
+
+public sealed class RotationPowerEntry
+{
+    public string Ref { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string FullRef { get; set; } = string.Empty;
+    public int Level { get; set; }
 }
 
 public sealed class NemesisListResponse

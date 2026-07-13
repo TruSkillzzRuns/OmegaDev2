@@ -381,6 +381,112 @@ public sealed partial class SquadBuilderPage : Page
         }
     }
 
+    // ---------------- Rotation picker ----------------
+
+    private async void OpenRotation_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not string slotId) return;
+        var slot = Lineup.FirstOrDefault(s => s.SlotId == slotId);
+        if (slot == null) return;
+
+        _api.BaseUrl = AppState.ServerUrl;
+
+        var loading = new TextBlock { Text = "loading powers…", Opacity = 0.7 };
+        var body = new StackPanel { Spacing = 8, MinWidth = 420 };
+        body.Children.Add(new TextBlock
+        {
+            Text = "Preference applies to every phantom of this hero — not just this squad slot. It survives region hops and character switches.",
+            TextWrapping = TextWrapping.Wrap,
+            Opacity = 0.7,
+            FontSize = 12,
+        });
+        body.Children.Add(loading);
+
+        var dlg = new ContentDialog
+        {
+            Title = $"Rotation — {slot.HeroName}",
+            Content = body,
+            PrimaryButtonText = "Save",
+            SecondaryButtonText = "Clear preference",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Primary,
+            IsPrimaryButtonEnabled = false,
+            IsSecondaryButtonEnabled = false,
+            XamlRoot = this.XamlRoot,
+        };
+
+        RotationResponse? loaded = null;
+        try
+        {
+            loaded = await _api.GetRotationAsync(TargetPlayer, slot.Hero.ProtoRef);
+        }
+        catch (Exception ex) { SquadStatusText.Text = $"error: {ex.Message}"; return; }
+
+        body.Children.Remove(loading);
+        if (loaded == null || loaded.Ok == false)
+        {
+            body.Children.Add(new TextBlock { Text = loaded?.Error ?? "rotation lookup failed", Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Salmon) });
+            await dlg.ShowAsync();
+            return;
+        }
+
+        string current = loaded.PreferredPower ?? string.Empty;
+        var group = "RotSlot_" + slot.SlotId;
+
+        var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 380 };
+        var list = new StackPanel { Spacing = 3 };
+        scroll.Content = list;
+
+        var noneRadio = new RadioButton
+        {
+            Content = "No preference (default AI)",
+            GroupName = group,
+            IsChecked = string.IsNullOrEmpty(current),
+            Tag = string.Empty,
+        };
+        list.Children.Add(noneRadio);
+        list.Children.Add(new Border { Height = 1, Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Gray), Opacity = 0.2, Margin = new Thickness(0, 4, 0, 4) });
+
+        string chosenRef = current;
+        foreach (var p in loaded.Powers)
+        {
+            var container = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+            var rb = new RadioButton
+            {
+                GroupName = group,
+                IsChecked = string.Equals(p.Ref, current, StringComparison.OrdinalIgnoreCase),
+                Tag = p.Ref,
+            };
+            rb.Checked += (_, _) => { chosenRef = (rb.Tag as string) ?? string.Empty; dlg.IsPrimaryButtonEnabled = true; };
+            container.Children.Add(rb);
+            var text = new StackPanel { Spacing = 0 };
+            text.Children.Add(new TextBlock { Text = string.IsNullOrEmpty(p.Name) ? p.Ref : p.Name, FontSize = 13 });
+            text.Children.Add(new TextBlock { Text = p.Level > 0 ? $"unlocks at level {p.Level}" : (p.FullRef ?? ""), FontSize = 10, Opacity = 0.55 });
+            container.Children.Add(text);
+            list.Children.Add(container);
+        }
+        noneRadio.Checked += (_, _) => { chosenRef = string.Empty; dlg.IsPrimaryButtonEnabled = true; };
+
+        body.Children.Add(scroll);
+        dlg.IsSecondaryButtonEnabled = !string.IsNullOrEmpty(current);
+
+        var result = await dlg.ShowAsync();
+        try
+        {
+            if (result == ContentDialogResult.Primary)
+            {
+                var resp = await _api.PostRotationAsync(TargetPlayer, slot.Hero.ProtoRef, string.IsNullOrEmpty(chosenRef) ? null : chosenRef);
+                SquadStatusText.Text = resp?.Message ?? resp?.Error ?? "no response";
+            }
+            else if (result == ContentDialogResult.Secondary)
+            {
+                var resp = await _api.PostRotationAsync(TargetPlayer, slot.Hero.ProtoRef, null);
+                SquadStatusText.Text = resp?.Message ?? resp?.Error ?? "preference cleared";
+            }
+        }
+        catch (Exception ex) { SquadStatusText.Text = $"error: {ex.Message}"; }
+    }
+
     // ---------------- Sharing codes ----------------
 
     private async void ExportCode_Click(object sender, RoutedEventArgs e)
