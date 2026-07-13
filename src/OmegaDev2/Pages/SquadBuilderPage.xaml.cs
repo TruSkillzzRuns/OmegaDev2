@@ -380,4 +380,134 @@ public sealed partial class SquadBuilderPage : Page
             SquadStatusText.Text = $"error: {ex.Message}";
         }
     }
+
+    // ---------------- Sharing codes ----------------
+
+    private async void ExportCode_Click(object sender, RoutedEventArgs e)
+    {
+        if (Lineup.Count == 0)
+        {
+            StatusText.Text = "add heroes to the lineup before exporting";
+            return;
+        }
+
+        var payload = new SquadCode.Payload
+        {
+            Name = (SquadNameBox.Text?.Trim() is { Length: > 0 } n) ? n : null,
+            Members = Lineup.Select(s => new SquadCode.Member
+            {
+                HeroRef    = s.Hero.ProtoRef,
+                Level      = (int)s.Level,
+                LockLevel  = s.LockLevel,
+                CostumeRef = s.SelectedCostumeRef,
+                Invincible = s.Invincible,
+            }).ToList(),
+        };
+        string code = SquadCode.Encode(payload);
+
+        var dp = new Windows.ApplicationModel.DataTransfer.DataPackage();
+        dp.SetText(code);
+        Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dp);
+
+        var text = new TextBox
+        {
+            Text = code,
+            IsReadOnly = true,
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas"),
+            FontSize = 12,
+            MinHeight = 90,
+        };
+        var dlg = new ContentDialog
+        {
+            Title = $"Squad Code ({Lineup.Count} hero" + (Lineup.Count == 1 ? "" : "s") + ")",
+            Content = new StackPanel
+            {
+                Spacing = 8,
+                Children =
+                {
+                    new TextBlock { Text = "Copied to clipboard. Share it anywhere — Discord, notes, wherever. Recipient pastes it into Import Code.", TextWrapping = TextWrapping.Wrap, Opacity = 0.75 },
+                    text,
+                },
+            },
+            PrimaryButtonText = "Copy Again",
+            CloseButtonText = "Close",
+            DefaultButton = ContentDialogButton.Close,
+            XamlRoot = this.XamlRoot,
+        };
+        dlg.PrimaryButtonClick += (_, args) =>
+        {
+            var d = new Windows.ApplicationModel.DataTransfer.DataPackage();
+            d.SetText(code);
+            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(d);
+            args.Cancel = true;
+        };
+        await dlg.ShowAsync();
+    }
+
+    private async void ImportCode_Click(object sender, RoutedEventArgs e)
+    {
+        if (_allHeroes.Count == 0)
+        {
+            StatusText.Text = "load the roster first — Import needs it to resolve heroes";
+            return;
+        }
+
+        var input = new TextBox
+        {
+            PlaceholderText = "paste squad code here…",
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas"),
+            FontSize = 12,
+            MinHeight = 90,
+        };
+        var replaceCheck = new CheckBox { Content = "Replace current lineup (uncheck to append)", IsChecked = true };
+        var dlg = new ContentDialog
+        {
+            Title = "Import Squad Code",
+            Content = new StackPanel
+            {
+                Spacing = 8,
+                Children =
+                {
+                    new TextBlock { Text = "Only proto-ref IDs are transferred — no game files. Any hero or costume not on your install falls back to defaults.", TextWrapping = TextWrapping.Wrap, Opacity = 0.7, FontSize = 12 },
+                    input,
+                    replaceCheck,
+                },
+            },
+            PrimaryButtonText = "Import",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = this.XamlRoot,
+        };
+        var result = await dlg.ShowAsync();
+        if (result != ContentDialogResult.Primary) return;
+
+        var payload = SquadCode.TryDecode(input.Text ?? string.Empty, out string error);
+        if (payload is null)
+        {
+            SquadStatusText.Text = $"import failed: {error}";
+            return;
+        }
+
+        if (replaceCheck.IsChecked == true) Lineup.Clear();
+        if (!string.IsNullOrEmpty(payload.Name)) SquadNameBox.Text = payload.Name;
+
+        int added = 0, skipped = 0;
+        foreach (var m in payload.Members)
+        {
+            var card = _allHeroes.FirstOrDefault(h => string.Equals(h.Entry.ProtoRef, m.HeroRef, StringComparison.OrdinalIgnoreCase));
+            if (card == null) { skipped++; continue; }
+            var slot = new LineupSlot(card.Entry, m.LockLevel ? m.Level : 0, m.LockLevel, m.Invincible) { Portrait = card.Portrait };
+            Lineup.Add(slot);
+            await LoadCostumesIntoSlotAsync(slot, m.CostumeRef);
+            added++;
+        }
+
+        SquadStatusText.Text = skipped == 0
+            ? $"imported {added} hero" + (added == 1 ? "" : "s") + " from code"
+            : $"imported {added}, skipped {skipped} (unknown hero refs — different install?)";
+    }
 }

@@ -46,6 +46,13 @@
                 <TextBlock x:Name="StatusText"
                            VerticalAlignment="Center"
                            Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                <AppBarSeparator VerticalAlignment="Center" />
+                <Button Content="Export Code"
+                        Click="ExportCode_Click"
+                        ToolTipService.ToolTip="Copy the current lineup to a shareable code" />
+                <Button Content="Import Code"
+                        Click="ImportCode_Click"
+                        ToolTipService.ToolTip="Paste a squad code to load it into the lineup" />
             </StackPanel>
         </Border>
 
