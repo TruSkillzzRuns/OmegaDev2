@@ -149,7 +149,7 @@
                     <TextBlock FontSize="10"
                                Opacity="0.55"
                                CharacterSpacing="120"
-                               Text="OmegaDev2  ·  v0.1" />
+                               Text="OmegaDev2  ·  v0.2" />
                 </Border>
             </NavigationView.PaneFooter>
 
