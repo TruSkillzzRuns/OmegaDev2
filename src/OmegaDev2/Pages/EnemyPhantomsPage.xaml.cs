@@ -15,6 +15,24 @@ using Windows.UI;
 
 namespace OmegaDev2.Pages;
 
+public sealed class NemesisRow
+{
+    public string HeroRef { get; }
+    public string Title { get; }
+    public string Detail { get; }
+    public string RankBadge { get; }
+
+    public NemesisRow(NemesisEntryDto e)
+    {
+        HeroRef = e.HeroRef;
+        string niceHero = string.IsNullOrEmpty(e.HeroName) ? e.HeroRef : e.HeroName.Split('/').Last();
+        string suffix = string.IsNullOrEmpty(e.Suffix) ? "" : " " + e.Suffix;
+        Title = string.IsNullOrEmpty(e.LastKillerName) ? niceHero + suffix : e.LastKillerName + suffix;
+        Detail = $"{niceHero}  ·  kills {e.Kills}";
+        RankBadge = $"RANK {e.Rank}";
+    }
+}
+
 public sealed class EnemyRow
 {
     private static readonly Brush s_alive = new SolidColorBrush(Color.FromArgb(0xFF, 0xE8, 0x5C, 0x5C));
@@ -42,6 +60,7 @@ public sealed partial class EnemyPhantomsPage : Page
     private readonly List<PhantomHeroCard> _allHeroes = new();
     public ObservableCollection<PhantomHeroCard> ShownHeroes { get; } = new();
     public ObservableCollection<EnemyRow> Enemies { get; } = new();
+    public ObservableCollection<NemesisRow> NemesisEntries { get; } = new();
 
     private PhantomHeroCard? _selectedHero;
     private bool _portraitSweepRunning;
@@ -59,6 +78,7 @@ public sealed partial class EnemyPhantomsPage : Page
         InitializeComponent();
         HeroList.ItemsSource = ShownHeroes;
         EnemyList.ItemsSource = Enemies;
+        NemesisList.ItemsSource = NemesisEntries;
 
         _timer.Start();
     }
@@ -95,6 +115,7 @@ public sealed partial class EnemyPhantomsPage : Page
             StatusText.Text = $"{resp.TotalHeroes} heroes";
 
             _ = RunPortraitSweepAsync();
+            _ = RefreshNemesisAsync();
         }
         catch (Exception ex)
         {
@@ -289,5 +310,42 @@ public sealed partial class EnemyPhantomsPage : Page
             await PollEnemiesAsync();
         }
         catch (Exception ex) { StatusText.Text = $"error: {ex.Message}"; }
+    }
+
+    // ---------------- Nemesis ----------------
+
+    private async void NemesisRefresh_Click(object sender, RoutedEventArgs e) => await RefreshNemesisAsync();
+
+    private async Task RefreshNemesisAsync()
+    {
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.GetNemesisListAsync(TargetPlayer);
+            NemesisEntries.Clear();
+            if (resp == null || resp.Ok == false)
+            {
+                NemesisStatusText.Text = resp?.Error ?? "nemesis list failed";
+                return;
+            }
+            foreach (var n in resp.Nemeses) NemesisEntries.Add(new NemesisRow(n));
+            NemesisStatusText.Text = NemesisEntries.Count == 0
+                ? "no nemeses yet — die to an enemy phantom to earn one"
+                : $"{NemesisEntries.Count} on the roster";
+        }
+        catch (Exception ex) { NemesisStatusText.Text = $"error: {ex.Message}"; }
+    }
+
+    private async void NemesisBanish_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not string heroRef) return;
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.PostNemesisBanishAsync(TargetPlayer, heroRef);
+            NemesisStatusText.Text = resp?.Message ?? resp?.Error ?? "no response";
+            await RefreshNemesisAsync();
+        }
+        catch (Exception ex) { NemesisStatusText.Text = $"error: {ex.Message}"; }
     }
 }

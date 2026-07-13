@@ -231,6 +231,62 @@
                 <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
                         CornerRadius="6"
                         Padding="12">
+                    <StackPanel Spacing="8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="Nemesis Roster"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                            <Button Grid.Column="1" Content="Refresh" FontSize="11" Click="NemesisRefresh_Click" />
+                        </Grid>
+                        <TextBlock Text="Phantoms that have killed you. Higher rank = tougher when they return in a Rogue Encounter. Kill them or banish to close the loop."
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Opacity="0.75" />
+                        <ListView x:Name="NemesisList" SelectionMode="None" MaxHeight="220">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="local:NemesisRow">
+                                    <Grid Margin="0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{x:Bind Title}" FontSize="13" />
+                                            <TextBlock Text="{x:Bind Detail}" FontSize="10" Opacity="0.55" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{x:Bind RankBadge}"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#E85C5C"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,8,0" />
+                                        <Button Grid.Column="2"
+                                                Content="Banish"
+                                                FontSize="11"
+                                                Tag="{x:Bind HeroRef}"
+                                                Click="NemesisBanish_Click" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                        <TextBlock x:Name="NemesisStatusText"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                        CornerRadius="6"
+                        Padding="12">
                     <StackPanel Spacing="6">
                         <TextBlock Text="TIPS"
                                    FontSize="11"

@@ -346,6 +346,16 @@ public sealed class ServerApiClient : IDisposable
         => PostJsonAsync<RogueEncounterStatusResponse>("webapi/phantoms/rogue-encounter",
             new { playerName, enabled, trigger = triggerNow }, ct);
 
+    // ---- Nemesis ----
+    public Task<NemesisListResponse?> GetNemesisListAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<NemesisListResponse>($"webapi/phantoms/nemesis?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
+    public Task<PhantomOpResponse?> PostNemesisBanishAsync(string playerName, string heroRef, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/nemesis", new { playerName, action = "banish", heroRef }, ct);
+
+    public Task<PhantomOpResponse?> PostNemesisClearAsync(string playerName, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/nemesis", new { playerName, action = "clear" }, ct);
+
     public Task<PhantomOpResponse?> PostWavesStartAsync(object body, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/arena/waves/start", body, ct);
 
@@ -472,6 +482,24 @@ public sealed class EnemyPhantomEntry
     public int Level { get; set; }
     public int HealthPct { get; set; }
     public bool Dead { get; set; }
+}
+
+public sealed class NemesisListResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public List<NemesisEntryDto> Nemeses { get; set; } = new();
+}
+
+public sealed class NemesisEntryDto
+{
+    public string HeroRef { get; set; } = string.Empty;
+    public string HeroName { get; set; } = string.Empty;
+    public int Rank { get; set; }
+    public int Kills { get; set; }
+    public string LastKillerName { get; set; } = string.Empty;
+    public string Suffix { get; set; } = string.Empty;
+    public long LastKillMs { get; set; }
 }
 
 public sealed class RogueEncounterStatusResponse
