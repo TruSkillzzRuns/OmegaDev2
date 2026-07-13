@@ -338,6 +338,14 @@ public sealed class ServerApiClient : IDisposable
     public Task<EnemyPhantomStatusResponse?> GetEnemyPhantomStatusAsync(string player, CancellationToken ct = default)
         => GetJsonAsync<EnemyPhantomStatusResponse>($"webapi/arena/enemyphantoms/status?player={Uri.EscapeDataString(player ?? "*")}", ct);
 
+    // ---- Rogue Encounter ---- (single endpoint handles both GET status and POST toggle/trigger)
+    public Task<RogueEncounterStatusResponse?> GetRogueEncounterStatusAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<RogueEncounterStatusResponse>($"webapi/phantoms/rogue-encounter?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
+    public Task<RogueEncounterStatusResponse?> PostRogueEncounterAsync(string playerName, bool? enabled, bool triggerNow, CancellationToken ct = default)
+        => PostJsonAsync<RogueEncounterStatusResponse>("webapi/phantoms/rogue-encounter",
+            new { playerName, enabled, trigger = triggerNow }, ct);
+
     public Task<PhantomOpResponse?> PostWavesStartAsync(object body, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/arena/waves/start", body, ct);
 
@@ -464,6 +472,15 @@ public sealed class EnemyPhantomEntry
     public int Level { get; set; }
     public int HealthPct { get; set; }
     public bool Dead { get; set; }
+}
+
+public sealed class RogueEncounterStatusResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Message { get; set; }
+    public bool Enabled { get; set; }
+    public long CooldownRemainingMs { get; set; }
 }
 
 public sealed class WavesStatusResponse

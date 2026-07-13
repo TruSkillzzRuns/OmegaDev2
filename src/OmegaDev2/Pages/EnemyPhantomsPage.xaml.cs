@@ -46,6 +46,7 @@ public sealed partial class EnemyPhantomsPage : Page
     private PhantomHeroCard? _selectedHero;
     private bool _portraitSweepRunning;
     private bool _pollInFlight;
+    private bool _rogueSuppressToggleEvent;
     private CancellationTokenSource? _pageCts = new();
     private readonly DispatcherQueueTimer _timer;
 
@@ -242,11 +243,51 @@ public sealed partial class EnemyPhantomsPage : Page
             _api.BaseUrl = AppState.ServerUrl;
             var resp = await _api.GetEnemyPhantomStatusAsync(TargetPlayer);
             Enemies.Clear();
-            if (resp == null || resp.Ok == false) return;
-            foreach (var enemy in resp.Enemies.OrderByDescending(x => x.HealthPct))
-                Enemies.Add(new EnemyRow(enemy));
+            if (resp != null && resp.Ok)
+                foreach (var enemy in resp.Enemies.OrderByDescending(x => x.HealthPct))
+                    Enemies.Add(new EnemyRow(enemy));
+
+            // Piggyback the 1s poll to keep the Rogue Encounter status
+            // fresh — cooldown countdown displays live as it ticks down.
+            var rogue = await _api.GetRogueEncounterStatusAsync(TargetPlayer);
+            if (rogue != null && rogue.Ok)
+            {
+                _rogueSuppressToggleEvent = true;
+                RogueSwitch.IsOn = rogue.Enabled;
+                _rogueSuppressToggleEvent = false;
+
+                if (rogue.Enabled == false)
+                    RogueStatusText.Text = "";
+                else if (rogue.CooldownRemainingMs > 0)
+                    RogueStatusText.Text = $"cooldown {Math.Ceiling(rogue.CooldownRemainingMs / 1000.0):0}s";
+                else
+                    RogueStatusText.Text = "ready — anything could happen";
+            }
         }
         catch { /* poll again next second */ }
         finally { _pollInFlight = false; }
+    }
+
+    private async void RogueSwitch_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_rogueSuppressToggleEvent) return;
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            await _api.PostRogueEncounterAsync(TargetPlayer, RogueSwitch.IsOn, triggerNow: false);
+        }
+        catch (Exception ex) { StatusText.Text = $"error: {ex.Message}"; }
+    }
+
+    private async void RogueTriggerNow_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.PostRogueEncounterAsync(TargetPlayer, enabled: null, triggerNow: true);
+            StatusText.Text = resp?.Message ?? resp?.Error ?? "no response";
+            await PollEnemiesAsync();
+        }
+        catch (Exception ex) { StatusText.Text = $"error: {ex.Message}"; }
     }
 }

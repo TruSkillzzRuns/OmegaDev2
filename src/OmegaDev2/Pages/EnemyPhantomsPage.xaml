@@ -203,6 +203,34 @@
                 <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
                         CornerRadius="6"
                         Padding="12">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Rogue Encounter"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                        <TextBlock Text="While roaming (never in hubs), 1–3 hostile heroes can spontaneously ambush you. 5-minute cooldown between events."
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Opacity="0.75" />
+                        <ToggleSwitch x:Name="RogueSwitch"
+                                      OnContent="On"
+                                      OffContent="Off"
+                                      Toggled="RogueSwitch_Toggled" />
+                        <TextBlock x:Name="RogueStatusText"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Opacity="0.75"
+                                   Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                        <Button Content="Trigger Now"
+                                FontSize="12"
+                                HorizontalAlignment="Stretch"
+                                Click="RogueTriggerNow_Click" />
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                        CornerRadius="6"
+                        Padding="12">
                     <StackPanel Spacing="6">
                         <TextBlock Text="TIPS"
                                    FontSize="11"

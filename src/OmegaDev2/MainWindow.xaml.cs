@@ -73,6 +73,7 @@ public sealed partial class MainWindow : Window
             "setup"         => typeof(SetupPage),
             "gearpicker"    => typeof(GearPickerPage),
             "diagnostics"   => typeof(DebugConsolePage),
+            "settings"      => typeof(SettingsPage),
             _               => null,
         };
         if (target != null) ContentFrame.Navigate(target);
