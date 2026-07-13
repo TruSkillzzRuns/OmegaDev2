@@ -45,9 +45,11 @@ public static class UpdateCheckService
         Version? v = Assembly.GetEntryAssembly()?.GetName().Version
                   ?? Assembly.GetExecutingAssembly().GetName().Version;
         if (v is null) return "0.0.0";
-        if (v.Revision == 0 && v.Build == 0) return $"{v.Major}.{v.Minor}";
-        if (v.Revision == 0) return $"{v.Major}.{v.Minor}.{v.Build}";
-        return v.ToString();
+        // Always emit Major.Minor.Build so the display and the comparison
+        // match the tag format we ship ("0.2.0", not "0.2").
+        int build = v.Build < 0 ? 0 : v.Build;
+        if (v.Revision > 0) return $"{v.Major}.{v.Minor}.{build}.{v.Revision}";
+        return $"{v.Major}.{v.Minor}.{build}";
     }
 
     /// <summary>Calls GitHub's /releases/latest endpoint and parses the response.</summary>
