@@ -17,19 +17,32 @@ namespace OmegaDev2.Pages;
 
 public sealed class NemesisRow
 {
+    private static readonly Brush s_activeBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0xE8, 0x5C, 0x5C));
+    private static readonly Brush s_defeatedBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0x77, 0x88, 0x88));
+
     public string HeroRef { get; }
     public string Title { get; }
     public string Detail { get; }
     public string RankBadge { get; }
+    public Brush RankBrush { get; }
+    public double TitleOpacity { get; }
 
     public NemesisRow(NemesisEntryDto e)
     {
         HeroRef = e.HeroRef;
         string niceHero = string.IsNullOrEmpty(e.HeroName) ? e.HeroRef : e.HeroName.Split('/').Last();
         string suffix = string.IsNullOrEmpty(e.Suffix) ? "" : " " + e.Suffix;
-        Title = string.IsNullOrEmpty(e.LastKillerName) ? niceHero + suffix : e.LastKillerName + suffix;
-        Detail = $"{niceHero}  ·  kills {e.Kills}";
+        string stars = new string('★', System.Math.Clamp(e.Rank, 1, 5));
+
+        string baseTitle = string.IsNullOrEmpty(e.LastKillerName) ? niceHero : e.LastKillerName;
+        Title = e.Defeated ? $"{baseTitle}{suffix}" : $"{stars} {baseTitle}{suffix}";
+
+        string status = e.Defeated ? "DEFEATED" : "ACTIVE";
+        string revenge = e.RevengeKills > 0 ? $"  ·  your revenge {e.RevengeKills}" : "";
+        Detail = $"{niceHero}  ·  {status}  ·  their kills {e.Kills}{revenge}";
         RankBadge = $"RANK {e.Rank}";
+        RankBrush = e.Defeated ? s_defeatedBrush : s_activeBrush;
+        TitleOpacity = e.Defeated ? 0.55 : 1.0;
     }
 }
 
@@ -329,9 +342,11 @@ public sealed partial class EnemyPhantomsPage : Page
                 return;
             }
             foreach (var n in resp.Nemeses) NemesisEntries.Add(new NemesisRow(n));
+            int active = 0, defeated = 0;
+            foreach (var r in resp.Nemeses) { if (r.Defeated) defeated++; else active++; }
             NemesisStatusText.Text = NemesisEntries.Count == 0
-                ? "no nemeses yet — die to an enemy phantom to earn one"
-                : $"{NemesisEntries.Count} on the roster";
+                ? "no nemeses yet — die to an enemy phantom to earn a spot in your history"
+                : $"{active} active, {defeated} defeated  ·  {NemesisEntries.Count} total";
         }
         catch (Exception ex) { NemesisStatusText.Text = $"error: {ex.Message}"; }
     }

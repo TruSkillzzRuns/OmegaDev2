@@ -522,6 +522,8 @@ public sealed class NemesisEntryDto
     public string HeroName { get; set; } = string.Empty;
     public int Rank { get; set; }
     public int Kills { get; set; }
+    public int RevengeKills { get; set; }
+    public bool Defeated { get; set; }
     public string LastKillerName { get; set; } = string.Empty;
     public string Suffix { get; set; } = string.Empty;
     public long LastKillMs { get; set; }

@@ -377,7 +377,12 @@ public sealed class AssetSetupService
         };
         psi.ArgumentList.Add("indexmeshes");
         psi.ArgumentList.Add(cookedPath);
-        psi.ArgumentList.Add(cacheDir);
+        // UpkExtract writes meshIndex.json to this exact path, then puts
+        // texIndex.json + classMeshIndex.json alongside it. If we pass the
+        // Cache directory itself as the destination, the first
+        // File.WriteAllTextAsync throws UnauthorizedAccessException because
+        // Windows can't overwrite a directory as a file.
+        psi.ArgumentList.Add(Path.Combine(cacheDir, "meshIndex.json"));
 
         using var proc = Process.Start(psi);
         if (proc == null) { onOutput("failed to start UpkExtract"); return false; }
