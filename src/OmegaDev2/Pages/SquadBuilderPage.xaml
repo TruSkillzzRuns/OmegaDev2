@@ -59,7 +59,7 @@
         <!-- Main: roster | lineup | saved squads -->
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="360" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="320" />
             </Grid.ColumnDefinitions>
@@ -100,7 +100,16 @@
                                                Stretch="UniformToFill" />
                                     </Border>
                                     <StackPanel VerticalAlignment="Center" Spacing="0">
-                                        <TextBlock Text="{x:Bind Name}" FontSize="13" />
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="{x:Bind Name}" FontSize="13" VerticalAlignment="Center" />
+                                            <Border Background="#553aa0ff"
+                                                    CornerRadius="3"
+                                                    Padding="4,0"
+                                                    VerticalAlignment="Center"
+                                                    Visibility="{x:Bind TeamUpBadgeVisibility}">
+                                                <TextBlock Text="TEAM-UP" FontSize="9" FontWeight="SemiBold" Foreground="#ffe0f0ff" />
+                                            </Border>
+                                        </StackPanel>
                                         <TextBlock Text="{x:Bind SubName}" FontSize="10" Opacity="0.55" />
                                     </StackPanel>
                                 </StackPanel>
@@ -171,7 +180,15 @@
                                                 <ComboBox Header="Costume"
                                                           ItemsSource="{x:Bind CostumeLabels, Mode=OneWay}"
                                                           SelectedIndex="{x:Bind CostumeIndex, Mode=TwoWay}"
-                                                          Width="220" />
+                                                          Width="220"
+                                                          Visibility="{x:Bind CostumeVisibility}" />
+                                                <Border Background="#553aa0ff"
+                                                        CornerRadius="3"
+                                                        Padding="6,2"
+                                                        VerticalAlignment="Bottom"
+                                                        Visibility="{x:Bind TeamUpBadgeVisibility}">
+                                                    <TextBlock Text="TEAM-UP" FontSize="10" FontWeight="SemiBold" Foreground="#ffe0f0ff" />
+                                                </Border>
                                                 <CheckBox Content="Invincible"
                                                           IsChecked="{x:Bind Invincible, Mode=TwoWay}"
                                                           VerticalAlignment="Bottom"

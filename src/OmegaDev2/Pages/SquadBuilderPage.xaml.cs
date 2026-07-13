@@ -30,6 +30,14 @@ public sealed class LineupSlot : INotifyPropertyChanged
     public PhantomHeroEntry Hero { get; }
     public string HeroName => string.IsNullOrEmpty(Hero.DisplayName) ? Hero.Name : Hero.DisplayName!;
 
+    // Team-ups have no server-side costume swap path — hide the costume
+    // dropdown and the "TEAM-UP" badge shows in its place.
+    public bool IsTeamUp => Hero.IsTeamUp;
+    public Microsoft.UI.Xaml.Visibility CostumeVisibility
+        => IsTeamUp ? Microsoft.UI.Xaml.Visibility.Collapsed : Microsoft.UI.Xaml.Visibility.Visible;
+    public Microsoft.UI.Xaml.Visibility TeamUpBadgeVisibility
+        => IsTeamUp ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+
     private BitmapImage? _portrait;
     public BitmapImage? Portrait { get => _portrait; set { _portrait = value; Raise(); } }
 

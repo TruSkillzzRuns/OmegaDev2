@@ -87,7 +87,16 @@
                                                Stretch="UniformToFill" />
                                     </Border>
                                     <StackPanel VerticalAlignment="Center" Spacing="0">
-                                        <TextBlock Text="{x:Bind Name}" FontSize="13" />
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="{x:Bind Name}" FontSize="13" VerticalAlignment="Center" />
+                                            <Border Background="#553aa0ff"
+                                                    CornerRadius="3"
+                                                    Padding="4,0"
+                                                    VerticalAlignment="Center"
+                                                    Visibility="{x:Bind TeamUpBadgeVisibility}">
+                                                <TextBlock Text="TEAM-UP" FontSize="9" FontWeight="SemiBold" Foreground="#ffe0f0ff" />
+                                            </Border>
+                                        </StackPanel>
                                         <TextBlock Text="{x:Bind SubName}" FontSize="10" Opacity="0.55" />
                                     </StackPanel>
                                 </StackPanel>

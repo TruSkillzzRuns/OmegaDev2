@@ -412,6 +412,10 @@ public sealed class PhantomHeroEntry
     public string? DisplayName { get; set; }
     public string? PortraitPath { get; set; }
     public System.Collections.Generic.List<string>? PortraitCandidates { get; set; }
+    // "avatar" for a playable hero, "teamup" for an AgentTeamUpPrototype.
+    // Absent on old server builds; treat missing as "avatar" for compat.
+    public string? Kind { get; set; }
+    public bool IsTeamUp => string.Equals(Kind, "teamup", System.StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed class PhantomCostumesResponse

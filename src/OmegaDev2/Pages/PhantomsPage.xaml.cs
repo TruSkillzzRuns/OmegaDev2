@@ -29,6 +29,13 @@ public sealed class PhantomHeroCard : INotifyPropertyChanged
     public string Name => string.IsNullOrEmpty(Entry.DisplayName) ? Entry.Name : Entry.DisplayName!;
     public string SubName => string.IsNullOrEmpty(Entry.DisplayName) ? "" : Entry.Name;
 
+    // Roster badge — small "TEAM-UP" chip in the card. Visible only for
+    // Kind=teamup entries so the user can tell them apart from playable
+    // avatars at a glance.
+    public bool IsTeamUp => Entry.IsTeamUp;
+    public Microsoft.UI.Xaml.Visibility TeamUpBadgeVisibility
+        => IsTeamUp ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+
     private BitmapImage? _portrait;
     public BitmapImage? Portrait { get => _portrait; set { _portrait = value; Raise(); } }
     public bool PortraitRequested;
