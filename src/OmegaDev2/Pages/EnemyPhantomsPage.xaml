@@ -257,7 +257,7 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center" Opacity="{x:Bind TitleOpacity}">
+                                        <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
                                             <TextBlock Text="{x:Bind Title}" FontSize="13" />
                                             <TextBlock Text="{x:Bind Detail}" FontSize="10" Opacity="0.7" />
                                         </StackPanel>
@@ -265,7 +265,7 @@
                                                    Text="{x:Bind RankBadge}"
                                                    FontSize="11"
                                                    FontWeight="SemiBold"
-                                                   Foreground="{x:Bind RankBrush}"
+                                                   Foreground="#E85C5C"
                                                    VerticalAlignment="Center"
                                                    Margin="0,0,8,0" />
                                         <Button Grid.Column="2"
