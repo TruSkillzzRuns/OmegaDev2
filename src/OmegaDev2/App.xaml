@@ -8,45 +8,97 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Palette borrowed from OmegaDev (cyan accent on tuned dark grays). -->
-            <Color x:Key="OmegaDev2.PageBackgroundColor">#FF121418</Color>
-            <Color x:Key="OmegaDev2.PanelBackgroundColor">#FF1B1F24</Color>
-            <Color x:Key="OmegaDev2.PanelSecondaryColor">#FF232933</Color>
-            <Color x:Key="OmegaDev2.PanelBorderColor">#FF2F3846</Color>
-            <Color x:Key="OmegaDev2.TextPrimaryColor">#FFF3F4F6</Color>
-            <Color x:Key="OmegaDev2.TextSecondaryColor">#FFB5BDC9</Color>
-            <Color x:Key="OmegaDev2.TextTertiaryColor">#FF7F8898</Color>
-            <Color x:Key="OmegaDev2.AccentColor">#FF4BC2FF</Color>
-            <Color x:Key="OmegaDev2.DangerColor">#FFEF4444</Color>
-            <Color x:Key="OmegaDev2.SuccessColor">#FF34D399</Color>
+            <!--
+              Theme-aware palette. The Default (Dark) values match the app's
+              historical look (cyan accent on tuned dark grays). The Light
+              variant is a Fluent-style clean palette that keeps the same cyan
+              accent for brand continuity but flips the surfaces to white/
+              light gray with dark text. WinUI 3 picks the correct set based
+              on Windows' system theme — no per-app toggle needed.
+            -->
+            <ResourceDictionary.ThemeDictionaries>
 
-            <SolidColorBrush x:Key="OmegaDev2.PageBackgroundBrush"   Color="{StaticResource OmegaDev2.PageBackgroundColor}" />
-            <SolidColorBrush x:Key="OmegaDev2.PanelBackgroundBrush"  Color="{StaticResource OmegaDev2.PanelBackgroundColor}" />
-            <SolidColorBrush x:Key="OmegaDev2.PanelSecondaryBrush"   Color="{StaticResource OmegaDev2.PanelSecondaryColor}" />
-            <SolidColorBrush x:Key="OmegaDev2.PanelBorderBrush"      Color="{StaticResource OmegaDev2.PanelBorderColor}" />
-            <SolidColorBrush x:Key="OmegaDev2.TextPrimaryBrush"      Color="{StaticResource OmegaDev2.TextPrimaryColor}" />
-            <SolidColorBrush x:Key="OmegaDev2.TextSecondaryBrush"    Color="{StaticResource OmegaDev2.TextSecondaryColor}" />
-            <SolidColorBrush x:Key="OmegaDev2.TextTertiaryBrush"     Color="{StaticResource OmegaDev2.TextTertiaryColor}" />
-            <SolidColorBrush x:Key="OmegaDev2.AccentBrush"           Color="{StaticResource OmegaDev2.AccentColor}" />
-            <SolidColorBrush x:Key="OmegaDev2.DangerBrush"           Color="{StaticResource OmegaDev2.DangerColor}" />
-            <SolidColorBrush x:Key="OmegaDev2.SuccessBrush"          Color="{StaticResource OmegaDev2.SuccessColor}" />
+                <!-- DARK (Default, matches OS dark mode) -->
+                <ResourceDictionary x:Key="Default">
+                    <Color x:Key="OmegaDev2.PageBackgroundColor">#FF121418</Color>
+                    <Color x:Key="OmegaDev2.PanelBackgroundColor">#FF1B1F24</Color>
+                    <Color x:Key="OmegaDev2.PanelSecondaryColor">#FF232933</Color>
+                    <Color x:Key="OmegaDev2.PanelBorderColor">#FF2F3846</Color>
+                    <Color x:Key="OmegaDev2.TextPrimaryColor">#FFF3F4F6</Color>
+                    <Color x:Key="OmegaDev2.TextSecondaryColor">#FFB5BDC9</Color>
+                    <Color x:Key="OmegaDev2.TextTertiaryColor">#FF7F8898</Color>
+                    <Color x:Key="OmegaDev2.AccentColor">#FF4BC2FF</Color>
+                    <Color x:Key="OmegaDev2.DangerColor">#FFEF4444</Color>
+                    <Color x:Key="OmegaDev2.SuccessColor">#FF34D399</Color>
+                    <!-- Team-up chip: readable on dark backgrounds. -->
+                    <Color x:Key="OmegaDev2.TeamUpBadgeBackground">#553aa0ff</Color>
+                    <Color x:Key="OmegaDev2.TeamUpBadgeForeground">#ffe0f0ff</Color>
+                    <!-- Alive-count / danger-value emphasis red. -->
+                    <Color x:Key="OmegaDev2.DangerEmphasisColor">#FFE85C5C</Color>
+                    <Color x:Key="OmegaDev2.MutedTextColor">#FF9CA3AF</Color>
+                </ResourceDictionary>
+
+                <!-- LIGHT (matches OS light mode) -->
+                <ResourceDictionary x:Key="Light">
+                    <Color x:Key="OmegaDev2.PageBackgroundColor">#FFF3F4F6</Color>
+                    <Color x:Key="OmegaDev2.PanelBackgroundColor">#FFFFFFFF</Color>
+                    <Color x:Key="OmegaDev2.PanelSecondaryColor">#FFF7F8FA</Color>
+                    <Color x:Key="OmegaDev2.PanelBorderColor">#FFDDE1E7</Color>
+                    <Color x:Key="OmegaDev2.TextPrimaryColor">#FF16181C</Color>
+                    <Color x:Key="OmegaDev2.TextSecondaryColor">#FF4C5563</Color>
+                    <Color x:Key="OmegaDev2.TextTertiaryColor">#FF6B7280</Color>
+                    <!-- Slightly deeper blue in light mode so the accent still
+                         reads on white backgrounds (AA contrast). -->
+                    <Color x:Key="OmegaDev2.AccentColor">#FF0284C7</Color>
+                    <Color x:Key="OmegaDev2.DangerColor">#FFD32F2F</Color>
+                    <Color x:Key="OmegaDev2.SuccessColor">#FF15803D</Color>
+                    <!-- Team-up chip: darker text on the same-hue blue tint so
+                         it stays legible against a white card. -->
+                    <Color x:Key="OmegaDev2.TeamUpBadgeBackground">#553aa0ff</Color>
+                    <Color x:Key="OmegaDev2.TeamUpBadgeForeground">#FF0F3B7A</Color>
+                    <!-- Alive-count / danger-value emphasis red (a hair darker
+                         for AA contrast on white). -->
+                    <Color x:Key="OmegaDev2.DangerEmphasisColor">#FFC53030</Color>
+                    <Color x:Key="OmegaDev2.MutedTextColor">#FF6B7280</Color>
+                </ResourceDictionary>
+
+            </ResourceDictionary.ThemeDictionaries>
+
+            <!-- Brushes reference the theme-scoped colors. Because Color keys
+                 live inside ThemeDictionaries, {ThemeResource} on the brush's
+                 Color binding picks the right value at runtime — brush keys
+                 stay identical to what every page already uses. -->
+            <SolidColorBrush x:Key="OmegaDev2.PageBackgroundBrush"   Color="{ThemeResource OmegaDev2.PageBackgroundColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.PanelBackgroundBrush"  Color="{ThemeResource OmegaDev2.PanelBackgroundColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.PanelSecondaryBrush"   Color="{ThemeResource OmegaDev2.PanelSecondaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.PanelBorderBrush"      Color="{ThemeResource OmegaDev2.PanelBorderColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.TextPrimaryBrush"      Color="{ThemeResource OmegaDev2.TextPrimaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.TextSecondaryBrush"    Color="{ThemeResource OmegaDev2.TextSecondaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.TextTertiaryBrush"     Color="{ThemeResource OmegaDev2.TextTertiaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.AccentBrush"           Color="{ThemeResource OmegaDev2.AccentColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.DangerBrush"           Color="{ThemeResource OmegaDev2.DangerColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.SuccessBrush"          Color="{ThemeResource OmegaDev2.SuccessColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.TeamUpBadgeBackgroundBrush" Color="{ThemeResource OmegaDev2.TeamUpBadgeBackground}" />
+            <SolidColorBrush x:Key="OmegaDev2.TeamUpBadgeForegroundBrush" Color="{ThemeResource OmegaDev2.TeamUpBadgeForeground}" />
+            <SolidColorBrush x:Key="OmegaDev2.DangerEmphasisBrush"   Color="{ThemeResource OmegaDev2.DangerEmphasisColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.MutedTextBrush"        Color="{ThemeResource OmegaDev2.MutedTextColor}" />
 
             <!-- Backward-compat aliases so existing pages don't have to change. -->
-            <SolidColorBrush x:Key="OmegaDev2.BgBrush"    Color="{StaticResource OmegaDev2.PageBackgroundColor}" />
-            <SolidColorBrush x:Key="OmegaDev2.PanelBrush" Color="{StaticResource OmegaDev2.PanelBackgroundColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.BgBrush"    Color="{ThemeResource OmegaDev2.PageBackgroundColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.PanelBrush" Color="{ThemeResource OmegaDev2.PanelBackgroundColor}" />
 
             <!-- OmegaDev.* aliases so ported pages compile without renaming brushes. -->
-            <SolidColorBrush x:Key="OmegaDev.PageBackgroundBrush"  Color="{StaticResource OmegaDev2.PageBackgroundColor}" />
-            <SolidColorBrush x:Key="OmegaDev.PanelBackgroundBrush" Color="{StaticResource OmegaDev2.PanelBackgroundColor}" />
-            <SolidColorBrush x:Key="OmegaDev.PanelSecondaryBrush"  Color="{StaticResource OmegaDev2.PanelSecondaryColor}" />
-            <SolidColorBrush x:Key="OmegaDev.PanelBorderBrush"     Color="{StaticResource OmegaDev2.PanelBorderColor}" />
-            <SolidColorBrush x:Key="OmegaDev.TextPrimaryBrush"     Color="{StaticResource OmegaDev2.TextPrimaryColor}" />
-            <SolidColorBrush x:Key="OmegaDev.TextSecondaryBrush"   Color="{StaticResource OmegaDev2.TextSecondaryColor}" />
-            <SolidColorBrush x:Key="OmegaDev.AccentBrush"          Color="{StaticResource OmegaDev2.AccentColor}" />
+            <SolidColorBrush x:Key="OmegaDev.PageBackgroundBrush"  Color="{ThemeResource OmegaDev2.PageBackgroundColor}" />
+            <SolidColorBrush x:Key="OmegaDev.PanelBackgroundBrush" Color="{ThemeResource OmegaDev2.PanelBackgroundColor}" />
+            <SolidColorBrush x:Key="OmegaDev.PanelSecondaryBrush"  Color="{ThemeResource OmegaDev2.PanelSecondaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev.PanelBorderBrush"     Color="{ThemeResource OmegaDev2.PanelBorderColor}" />
+            <SolidColorBrush x:Key="OmegaDev.TextPrimaryBrush"     Color="{ThemeResource OmegaDev2.TextPrimaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev.TextSecondaryBrush"   Color="{ThemeResource OmegaDev2.TextSecondaryColor}" />
+            <SolidColorBrush x:Key="OmegaDev.AccentBrush"          Color="{ThemeResource OmegaDev2.AccentColor}" />
 
             <!-- NavigationView pane matches the panel color so header/menu blend. -->
-            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{StaticResource OmegaDev2.PanelBackgroundColor}" />
-            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground"  Color="{StaticResource OmegaDev2.PanelBackgroundColor}" />
+            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{ThemeResource OmegaDev2.PanelBackgroundColor}" />
+            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground"  Color="{ThemeResource OmegaDev2.PanelBackgroundColor}" />
 
             <Style TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{ThemeResource OmegaDev2.TextPrimaryBrush}" />

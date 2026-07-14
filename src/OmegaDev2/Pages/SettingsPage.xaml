@@ -101,6 +101,30 @@
                 </StackPanel>
             </Border>
 
+            <!-- Appearance -->
+            <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                    CornerRadius="6"
+                    Padding="16">
+                <StackPanel Spacing="10">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="APPEARANCE"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   CharacterSpacing="180"
+                                   Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                        <TextBlock Text="Switch between light and dark mode without touching your Windows settings. Applies instantly."
+                                   FontSize="12"
+                                   Opacity="0.65"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="20">
+                        <RadioButton x:Name="ThemeSystemRadio" Content="Use Windows setting" GroupName="ThemeMode" Checked="ThemeRadio_Checked" Tag="System" />
+                        <RadioButton x:Name="ThemeLightRadio"  Content="Light" GroupName="ThemeMode" Checked="ThemeRadio_Checked" Tag="Light" />
+                        <RadioButton x:Name="ThemeDarkRadio"   Content="Dark"  GroupName="ThemeMode" Checked="ThemeRadio_Checked" Tag="Dark" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!-- About -->
             <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
                     CornerRadius="6"

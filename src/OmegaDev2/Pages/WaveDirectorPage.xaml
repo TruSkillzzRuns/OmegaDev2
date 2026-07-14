@@ -240,7 +240,7 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
-                                <TextBlock x:Name="LiveAliveText" Text="0" FontSize="22" FontWeight="SemiBold" Foreground="#E85C5C" />
+                                <TextBlock x:Name="LiveAliveText" Text="0" FontSize="22" FontWeight="SemiBold" Foreground="{ThemeResource OmegaDev2.DangerEmphasisBrush}" />
                                 <TextBlock Text="ALIVE" FontSize="10" CharacterSpacing="140" Opacity="0.6" />
                             </StackPanel>
                             <StackPanel Grid.Column="1">

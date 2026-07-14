@@ -22,6 +22,14 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         Title = "OmegaDev2";
 
+        // Apply the user's theme preference (System/Light/Dark) to the window's
+        // root FrameworkElement. Default = follow the OS; Light/Dark = pin the
+        // app regardless of the Windows setting. Subscribe so switching in
+        // Settings reflows the whole app live, no restart.
+        ApplyTheme(PreferencesService.Theme);
+        PreferencesService.ThemeChanged += ApplyTheme;
+        Closed += (_, _) => PreferencesService.ThemeChanged -= ApplyTheme;
+
         // Title-bar + taskbar icon (unpackaged app: resolve from the exe folder)
         string icoPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "OmegaDev2.ico");
         if (System.IO.File.Exists(icoPath))
@@ -33,6 +41,12 @@ public sealed partial class MainWindow : Window
         _pingTimer.Tick += async (_, _) => await PingAsync();
         _pingTimer.Start();
         _ = PingAsync(); // kick off immediately, don't wait 3s
+    }
+
+    private void ApplyTheme(PreferencesService.ThemeMode mode)
+    {
+        if (Content is FrameworkElement root)
+            root.RequestedTheme = PreferencesService.ToElementTheme(mode);
     }
 
     private async System.Threading.Tasks.Task PingAsync()

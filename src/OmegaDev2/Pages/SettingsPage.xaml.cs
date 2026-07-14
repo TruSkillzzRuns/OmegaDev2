@@ -11,10 +11,36 @@ public sealed partial class SettingsPage : Page
 {
     private UpdateCheckService.UpdateInfo? _lastInfo;
 
+    // Guard so setting the radio's IsChecked programmatically at init doesn't
+    // fire ThemeRadio_Checked and echo the current preference back to itself.
+    private bool _themeInitComplete;
+
     public SettingsPage()
     {
         InitializeComponent();
         CurrentVersionText.Text = "v" + UpdateCheckService.CurrentAssemblyVersion();
+        InitThemeRadios();
+    }
+
+    private void InitThemeRadios()
+    {
+        switch (PreferencesService.Theme)
+        {
+            case PreferencesService.ThemeMode.Light: ThemeLightRadio.IsChecked = true;  break;
+            case PreferencesService.ThemeMode.Dark:  ThemeDarkRadio.IsChecked  = true;  break;
+            default:                                 ThemeSystemRadio.IsChecked = true; break;
+        }
+        _themeInitComplete = true;
+    }
+
+    private void ThemeRadio_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!_themeInitComplete) return;
+        if (sender is RadioButton rb && rb.Tag is string tag
+            && Enum.TryParse<PreferencesService.ThemeMode>(tag, out var mode))
+        {
+            PreferencesService.Theme = mode;
+        }
     }
 
     private async void Check_Click(object sender, RoutedEventArgs e)

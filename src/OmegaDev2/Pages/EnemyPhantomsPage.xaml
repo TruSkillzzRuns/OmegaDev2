@@ -17,7 +17,7 @@
             <TextBlock Text="Enemy Phantoms"
                        FontSize="32"
                        FontWeight="SemiBold"
-                       Foreground="#E85C5C" />
+                       Foreground="{ThemeResource OmegaDev2.DangerEmphasisBrush}" />
             <TextBlock Text="Spawn hostile AI heroes that hunt you and your squad — full power kits, real gear, killable. Your phantoms will fight back. Kills against you are never credited to anyone."
                        FontSize="13"
                        TextWrapping="Wrap"
@@ -73,7 +73,7 @@
                                    FontSize="11"
                                    FontWeight="SemiBold"
                                    CharacterSpacing="180"
-                                   Foreground="#E85C5C" />
+                                   Foreground="{ThemeResource OmegaDev2.DangerEmphasisBrush}" />
                         <TextBlock Text="pick your opponent"
                                    FontSize="10"
                                    Opacity="0.55"
@@ -93,12 +93,12 @@
                                     <StackPanel VerticalAlignment="Center" Spacing="0">
                                         <StackPanel Orientation="Horizontal" Spacing="6">
                                             <TextBlock Text="{x:Bind Name}" FontSize="13" VerticalAlignment="Center" />
-                                            <Border Background="#553aa0ff"
+                                            <Border Background="{ThemeResource OmegaDev2.TeamUpBadgeBackgroundBrush}"
                                                     CornerRadius="3"
                                                     Padding="4,0"
                                                     VerticalAlignment="Center"
                                                     Visibility="{x:Bind TeamUpBadgeVisibility}">
-                                                <TextBlock Text="TEAM-UP" FontSize="9" FontWeight="SemiBold" Foreground="#ffe0f0ff" />
+                                                <TextBlock Text="TEAM-UP" FontSize="9" FontWeight="SemiBold" Foreground="{ThemeResource OmegaDev2.TeamUpBadgeForegroundBrush}" />
                                             </Border>
                                         </StackPanel>
                                         <TextBlock Text="{x:Bind SubName}" FontSize="10" Opacity="0.55" />
@@ -187,7 +187,7 @@
                                        Text="(random heroes)"
                                        FontSize="13"
                                        VerticalAlignment="Center"
-                                       Foreground="#E85C5C" />
+                                       Foreground="{ThemeResource OmegaDev2.DangerEmphasisBrush}" />
                             <Button Grid.Column="1" Content="✕" FontSize="10" Padding="6,2"
                                     Click="ClearHeroSelection_Click"
                                     ToolTipService.ToolTip="Back to random heroes" />
@@ -274,7 +274,7 @@
                                                    Text="{x:Bind RankBadge}"
                                                    FontSize="11"
                                                    FontWeight="SemiBold"
-                                                   Foreground="#E85C5C"
+                                                   Foreground="{ThemeResource OmegaDev2.DangerEmphasisBrush}"
                                                    VerticalAlignment="Center"
                                                    Margin="0,0,8,0" />
                                         <Button Grid.Column="2"
