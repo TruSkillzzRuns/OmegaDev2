@@ -318,7 +318,11 @@ public sealed partial class PhantomsPage : Page
             }
             foreach (var p in resp.Phantoms)
                 ActivePhantoms.Add(new ActivePhantomRow(p));
-            StatusText.Text = $"{resp.Count} active for {resp.Player}";
+            // Cap is null when the player's current region doesn't gate
+            // party size at all (Town/PublicCombatZone/MatchPlay) — the
+            // game's real story/raid caps otherwise apply here too.
+            string capSuffix = resp.Cap.HasValue ? $"/{resp.Cap.Value}" : "";
+            StatusText.Text = $"{resp.Count}{capSuffix} active for {resp.Player}";
         }
         catch (Exception ex)
         {

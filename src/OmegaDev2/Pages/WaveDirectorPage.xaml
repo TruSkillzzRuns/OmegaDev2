@@ -54,7 +54,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="300" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="320" />
+                <ColumnDefinition Width="340" />
             </Grid.ColumnDefinitions>
 
             <!-- Enemy catalog -->
@@ -111,12 +111,12 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0" Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock x:Name="BuilderTitle"
@@ -126,8 +126,13 @@
                                    FontWeight="SemiBold"
                                    VerticalAlignment="Center"
                                    Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
-                        <Button Grid.Column="1" Content="New Wave" Margin="0,0,8,0" Click="NewWave_Click" />
-                        <Button Grid.Column="2" Content="Clear Plan" Click="ClearPlan_Click" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <Button Content="New Wave" Click="NewWave_Click" />
+                            <Button Content="Duplicate Wave" Click="DuplicateWave_Click" />
+                            <Button Content="Clear Plan" Click="ClearPlan_Click" />
+                            <Button Content="Export Code" Click="ExportWaveCode_Click" ToolTipService.ToolTip="Copy this plan as a shareable code" />
+                            <Button Content="Import Code" Click="ImportWaveCode_Click" ToolTipService.ToolTip="Paste a plan someone shared with you" />
+                        </StackPanel>
                     </Grid>
 
                     <ListView x:Name="PlanList" Grid.Row="1" SelectionMode="None">
@@ -137,6 +142,8 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="{x:Bind Title}"
@@ -145,6 +152,22 @@
                                                    Foreground="{x:Bind TitleBrush}" />
                                     </StackPanel>
                                     <Button Grid.Column="1"
+                                            Content="▲"
+                                            FontSize="10"
+                                            Padding="6,2"
+                                            Visibility="{x:Bind HeaderOnlyVisible}"
+                                            Tag="{x:Bind RowKey}"
+                                            Click="MoveWaveUp_Click"
+                                            ToolTipService.ToolTip="Move wave up" />
+                                    <Button Grid.Column="2"
+                                            Content="▼"
+                                            FontSize="10"
+                                            Padding="6,2"
+                                            Visibility="{x:Bind HeaderOnlyVisible}"
+                                            Tag="{x:Bind RowKey}"
+                                            Click="MoveWaveDown_Click"
+                                            ToolTipService.ToolTip="Move wave down" />
+                                    <Button Grid.Column="3"
                                             Content="✕"
                                             FontSize="10"
                                             Padding="6,2"
@@ -182,76 +205,207 @@
                                 Click="AddPhantomsToWave_Click"
                                 ToolTipService.ToolTip="Adds hostile phantom heroes to the current wave" />
                     </Grid>
+
+                    <Grid Grid.Row="3" Margin="0,10,0,0" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <NumberBox x:Name="WaveIntermissionOverrideBox"
+                                   Grid.Column="0"
+                                   Header="This wave's intermission override (s, 0 = use global)"
+                                   Value="0" Minimum="0" Maximum="60"
+                                   SpinButtonPlacementMode="Compact" Width="280" />
+                        <Button Grid.Column="1"
+                                Content="Apply to Current Wave"
+                                VerticalAlignment="Bottom"
+                                Click="SetWaveIntermission_Click" />
+                    </Grid>
                 </Grid>
             </Border>
 
             <!-- Run control -->
-            <StackPanel Grid.Column="2" Spacing="12">
-                <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
-                        CornerRadius="6"
-                        Padding="12">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="Run"
-                                   FontSize="18"
-                                   FontWeight="SemiBold"
-                                   Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
-                        <ComboBox x:Name="ArenaCombo"
-                                  Header="Arena (optional — warp here first)"
-                                  PlaceholderText="wave here"
-                                  HorizontalAlignment="Stretch"
-                                  SelectionChanged="ArenaCombo_SelectionChanged"
-                                  DisplayMemberPath="Label" />
-                        <CheckBox x:Name="ClearArenaCheck"
-                                  Content="Start empty (clear stragglers)"
-                                  IsChecked="True" />
-                        <NumberBox x:Name="IntermissionBox"
-                                   Header="Intermission between waves (s)"
-                                   Value="5" Minimum="1" Maximum="60"
-                                   SpinButtonPlacementMode="Compact" />
-                        <Button x:Name="StartBtn"
-                                Content="Start Run"
-                                Style="{ThemeResource AccentButtonStyle}"
-                                HorizontalAlignment="Stretch"
-                                Click="Start_Click" />
-                        <Button Content="Stop + Clean Up"
-                                HorizontalAlignment="Stretch"
-                                Click="Stop_Click" />
-                        <TextBlock x:Name="RunStatusText"
-                                   FontSize="11"
-                                   TextWrapping="Wrap"
-                                   Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
-                    </StackPanel>
-                </Border>
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="12">
+                    <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Run"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                            <ComboBox x:Name="ArenaCombo"
+                                      Header="Arena (optional — warp here first)"
+                                      PlaceholderText="wave here"
+                                      HorizontalAlignment="Stretch"
+                                      SelectionChanged="ArenaCombo_SelectionChanged"
+                                      DisplayMemberPath="Label" />
+                            <CheckBox x:Name="ClearArenaCheck"
+                                      Content="Start empty (clear stragglers)"
+                                      IsChecked="True" />
+                            <NumberBox x:Name="IntermissionBox"
+                                       Header="Intermission between waves (s)"
+                                       Value="5" Minimum="1" Maximum="60"
+                                       SpinButtonPlacementMode="Compact" />
+                            <CheckBox x:Name="LoopCheck" Content="Loop (repeat the plan indefinitely)" />
+                            <NumberBox x:Name="CountScaleBox"
+                                       Header="Enemy count scale per wave (%)"
+                                       Value="0" Minimum="0" Maximum="100"
+                                       SpinButtonPlacementMode="Compact"
+                                       ToolTipService.ToolTip="Each wave's enemy count grows by this percent, compounding per wave index" />
+                            <NumberBox x:Name="LevelBumpBox"
+                                       Header="Phantom level bump per wave"
+                                       Value="0" Minimum="0" Maximum="10"
+                                       SpinButtonPlacementMode="Compact"
+                                       ToolTipService.ToolTip="Only applies to enemy phantoms with an explicit level (not 'match player')" />
+                            <ComboBox x:Name="RewardModeCombo" Header="Reward" HorizontalAlignment="Stretch" SelectedIndex="0">
+                                <ComboBoxItem Content="None" Tag="None" />
+                                <ComboBoxItem Content="Every wave" Tag="EveryWave" />
+                                <ComboBoxItem Content="On run complete" Tag="OnComplete" />
+                            </ComboBox>
+                            <TextBox x:Name="RewardLootTableBox"
+                                     Header="Reward loot table ref"
+                                     PlaceholderText="e.g. Loot/Tables/SomeTable.prototype" />
+                            <Button x:Name="StartBtn"
+                                    Content="Start Run"
+                                    Style="{ThemeResource AccentButtonStyle}"
+                                    HorizontalAlignment="Stretch"
+                                    Click="Start_Click" />
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="PauseResumeBtn" Grid.Column="0" Content="Pause" HorizontalAlignment="Stretch" Click="PauseResume_Click" />
+                                <Button Grid.Column="1" Content="Skip" HorizontalAlignment="Stretch" Click="Skip_Click" />
+                            </Grid>
+                            <Button Content="Stop + Clean Up"
+                                    HorizontalAlignment="Stretch"
+                                    Click="Stop_Click" />
+                            <CheckBox x:Name="NotifyOnCompleteCheck" Content="Notify on complete" IsChecked="True" />
+                            <TextBlock x:Name="RunStatusText"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                            <InfoBar x:Name="CompletionInfoBar"
+                                     Title="Wave run complete"
+                                     Severity="Success"
+                                     IsClosable="True"
+                                     IsOpen="False" />
+                        </StackPanel>
+                    </Border>
 
-                <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
-                        CornerRadius="6"
-                        Padding="12">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="LIVE"
-                                   FontSize="11"
-                                   FontWeight="SemiBold"
-                                   CharacterSpacing="180"
-                                   Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
-                        <TextBlock x:Name="LiveWaveText"   Text="wave — / —" FontSize="22" FontWeight="SemiBold" />
-                        <TextBlock x:Name="LiveStateText"  Text="idle" FontSize="13" Opacity="0.75" />
-                        <Grid Margin="0,4,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock x:Name="LiveAliveText" Text="0" FontSize="22" FontWeight="SemiBold" Foreground="{ThemeResource OmegaDev2.DangerEmphasisBrush}" />
-                                <TextBlock Text="ALIVE" FontSize="10" CharacterSpacing="140" Opacity="0.6" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="1">
-                                <TextBlock x:Name="LiveKillsText" Text="0" FontSize="22" FontWeight="SemiBold" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
-                                <TextBlock Text="KILLS" FontSize="10" CharacterSpacing="140" Opacity="0.6" />
-                            </StackPanel>
-                        </Grid>
-                        <TextBlock x:Name="LiveTimerText" Text="" FontSize="12" Opacity="0.75" />
-                    </StackPanel>
-                </Border>
-            </StackPanel>
+                    <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="LIVE"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       CharacterSpacing="180"
+                                       Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                            <TextBlock x:Name="LiveWaveText"   Text="wave — / —" FontSize="22" FontWeight="SemiBold" />
+                            <TextBlock x:Name="LiveStateText"  Text="idle" FontSize="13" Opacity="0.75" />
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock x:Name="LiveAliveText" Text="0" FontSize="22" FontWeight="SemiBold" Foreground="{ThemeResource OmegaDev2.DangerEmphasisBrush}" />
+                                    <TextBlock Text="ALIVE" FontSize="10" CharacterSpacing="140" Opacity="0.6" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock x:Name="LiveKillsText" Text="0" FontSize="22" FontWeight="SemiBold" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                                    <TextBlock Text="KILLS" FontSize="10" CharacterSpacing="140" Opacity="0.6" />
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock x:Name="LiveTimerText" Text="" FontSize="12" Opacity="0.75" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12">
+                        <StackPanel Spacing="8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="SAVED PLANS"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           CharacterSpacing="180"
+                                           VerticalAlignment="Center"
+                                           Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                                <Button Grid.Column="1" Content="Refresh" FontSize="11" Click="RefreshPlans_Click" />
+                            </Grid>
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="PlanNameBox" Grid.Column="0" PlaceholderText="plan name" />
+                                <Button Grid.Column="1" Content="Save Plan" Click="SavePlan_Click" />
+                            </Grid>
+                            <ItemsControl x:Name="SavedPlansList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="local:WavePlanNameRow">
+                                        <Grid Margin="0,3" ColumnSpacing="6">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{x:Bind Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                            <Button Grid.Column="1" Content="Start" FontSize="11" Tag="{x:Bind Name}" Click="StartPlan_Click" />
+                                            <Button Grid.Column="2" Content="Delete" FontSize="11" Tag="{x:Bind Name}" Click="DeletePlan_Click" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock x:Name="PlanStatusText"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12">
+                        <StackPanel Spacing="8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="RECENT RUNS"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           CharacterSpacing="180"
+                                           VerticalAlignment="Center"
+                                           Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                                <Button Grid.Column="1" Content="Refresh" FontSize="11" Click="RefreshHistory_Click" />
+                            </Grid>
+                            <ItemsControl x:Name="HistoryList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="local:WaveHistoryRow">
+                                        <StackPanel Margin="0,4" Spacing="0">
+                                            <TextBlock Text="{x:Bind Summary}" FontSize="12" />
+                                            <TextBlock Text="{x:Bind Detail}" FontSize="10" Opacity="0.6" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </Page>

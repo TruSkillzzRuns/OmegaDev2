@@ -372,6 +372,24 @@ public sealed class ServerApiClient : IDisposable
     public Task<WavesStatusResponse?> GetWavesStatusAsync(string player, CancellationToken ct = default)
         => GetJsonAsync<WavesStatusResponse>($"webapi/arena/waves/status?player={Uri.EscapeDataString(player ?? "*")}", ct);
 
+    public Task<PhantomOpResponse?> PostWavesPauseAsync(string playerName, bool paused, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/arena/waves/pause", new { playerName, paused }, ct);
+
+    public Task<PhantomOpResponse?> PostWavesSkipAsync(string playerName, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/arena/waves/skip", new { playerName }, ct);
+
+    public Task<WaveHistoryResponse?> GetWaveHistoryAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<WaveHistoryResponse>($"webapi/arena/waves/history?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
+    public Task<WavePlansResponse?> GetWavePlansAsync(string playerName, CancellationToken ct = default)
+        => PostJsonAsync<WavePlansResponse>("webapi/arena/waves/plans", new { playerName, op = "list" }, ct);
+
+    public Task<WavePlansResponse?> PostWavePlanSaveAsync(string playerName, string name, object plan, CancellationToken ct = default)
+        => PostJsonAsync<WavePlansResponse>("webapi/arena/waves/plans", new { playerName, op = "save", name, plan }, ct);
+
+    public Task<WavePlansResponse?> PostWavePlanOpAsync(string playerName, string op, string name, CancellationToken ct = default)
+        => PostJsonAsync<WavePlansResponse>("webapi/arena/waves/plans", new { playerName, op, name }, ct);
+
     // ---- Stash Manager ----
     public Task<InventoryResponse?> GetInventoryAsync(string player, CancellationToken ct = default)
         => GetJsonAsync<InventoryResponse>($"webapi/inventory?player={Uri.EscapeDataString(player ?? "*")}", ct);
@@ -439,6 +457,9 @@ public sealed class PhantomStatusResponse
     public string? Error { get; set; }
     public string? Player { get; set; }
     public int Count { get; set; }
+    // Null = uncapped in the player's current region (Town/PublicCombatZone/
+    // MatchPlay). Otherwise the game's real party (story) or raid cap.
+    public int? Cap { get; set; }
     public System.Collections.Generic.List<PhantomInfoEntry> Phantoms { get; set; } = new();
 }
 
@@ -560,6 +581,35 @@ public sealed class WaveStatusEntry
     public int SpawnedTotal { get; set; }
     public long RunSeconds { get; set; }
     public long IntermissionRemainingMs { get; set; }
+    public bool Paused { get; set; }
+    public bool Loop { get; set; }
+}
+
+public sealed class WaveHistoryEntry
+{
+    public long StartedAtMs { get; set; }
+    public long EndedAtMs { get; set; }
+    public int WavesCompleted { get; set; }
+    public int TotalWaves { get; set; }
+    public int Kills { get; set; }
+    public int SpawnedTotal { get; set; }
+    public bool Completed { get; set; }
+    public string? ArenaRegionRef { get; set; }
+}
+
+public sealed class WaveHistoryResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public List<WaveHistoryEntry> Entries { get; set; } = new();
+}
+
+public sealed class WavePlansResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Message { get; set; }
+    public List<string>? Plans { get; set; }
 }
 
 public sealed class InventoryResponse
