@@ -9,3 +9,13 @@ obj/
 *.log
 Thumbs.db
 .DS_Store
+
+# WebView2's per-app browser profile (History, Login Data, Web Data,
+# Cookies — real Chromium user-data files, not app code). Already covered
+# by bin/ above for git purposes, but this got leaked once via the
+# separate release-zip packaging step, which zips files directly and does
+# NOT go through git or this file at all. Any release build script MUST
+# explicitly exclude *.WebView2/ (or publish from a directory that never
+# ran the app, so this folder never exists in the first place) — this
+# gitignore entry alone does not protect a release zip.
+*.WebView2/
