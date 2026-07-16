@@ -3,7 +3,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:OmegaDev2.Pages"
-    Background="{ThemeResource OmegaDev2.PageBackgroundBrush}">
+    Background="{ThemeResource OmegaDev2.PageBackgroundBrush}"
+    NavigationCacheMode="Enabled">
 
     <Grid Padding="24,20,24,16">
         <Grid.RowDefinitions>
@@ -43,6 +44,9 @@
                          Text="*"
                          VerticalAlignment="Center" />
                 <Button Content="Reset Meter" Click="Reset_Click" />
+                <Button Content="Save to Leaderboard"
+                        Click="SaveToLeaderboard_Click"
+                        ToolTipService.ToolTip="Save the top damage dealer's overall DPS to the Leaderboard" />
                 <TextBlock x:Name="StatusText"
                            VerticalAlignment="Center"
                            Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
@@ -63,14 +67,16 @@
                 <Grid Grid.Row="0" Margin="8,0,8,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="130" />
-                        <ColumnDefinition Width="130" />
-                        <ColumnDefinition Width="130" />
+                        <ColumnDefinition Width="120" />
+                        <ColumnDefinition Width="120" />
+                        <ColumnDefinition Width="120" />
+                        <ColumnDefinition Width="120" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="COMBATANT" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
                     <TextBlock Grid.Column="1" Text="TOTAL" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
-                    <TextBlock Grid.Column="2" Text="DPS (10s)" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
-                    <TextBlock Grid.Column="3" Text="DPS (fight)" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <TextBlock Grid.Column="2" Text="PEAK BURST" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <TextBlock Grid.Column="3" Text="DPS (10s)" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <TextBlock Grid.Column="4" Text="DPS (fight)" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
                 </Grid>
 
                 <ListView x:Name="DpsList" Grid.Row="1" SelectionMode="None">
@@ -79,12 +85,13 @@
                             <Grid Margin="0,4">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="130" />
-                                    <ColumnDefinition Width="130" />
-                                    <ColumnDefinition Width="130" />
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="120" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,12,0">
-                                    <TextBlock FontSize="13">
+                                    <TextBlock FontSize="13" TextWrapping="Wrap">
                                         <Run Text="{x:Bind Name}" />
                                         <Run Text="{x:Bind IdleText}" Foreground="Gray" />
                                     </TextBlock>
@@ -95,8 +102,9 @@
                                             Background="{x:Bind BarBrush}" />
                                 </StackPanel>
                                 <TextBlock Grid.Column="1" Text="{x:Bind TotalText}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="2" Text="{x:Bind Dps10Text}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="3" Text="{x:Bind DpsAllText}" FontSize="13" Opacity="0.75" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="2" Text="{x:Bind PeakHitText}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" ToolTipService.ToolTip="Biggest damage burst this parse — groups hits from the same cast (multi-target AOE, beam sweeps, bounces) landing within ~150ms of each other" />
+                                <TextBlock Grid.Column="3" Text="{x:Bind Dps10Text}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="4" Text="{x:Bind DpsAllText}" FontSize="13" Opacity="0.75" HorizontalAlignment="Right" VerticalAlignment="Center" />
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>

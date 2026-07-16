@@ -109,6 +109,12 @@ public sealed partial class SquadBuilderPage : Page
         Lineup.CollectionChanged += (_, _) => LineupTitle.Text = $"Lineup ({Lineup.Count})";
     }
 
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        _pageCts = new();
+    }
+
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         _pageCts?.Cancel();
@@ -378,7 +384,7 @@ public sealed partial class SquadBuilderPage : Page
         try
         {
             _api.BaseUrl = AppState.ServerUrl;
-            var resp = await _api.PostPhantomSquadOpAsync(TargetPlayer, op, name);
+            var resp = await _api.PostPhantomSquadOpAsync(TargetPlayer, op, name, BypassCapCheck.IsChecked == true);
             string message = resp?.Message ?? resp?.Error ?? "no response";
             await RefreshSquadsAsync();
             SquadStatusText.Text = message;

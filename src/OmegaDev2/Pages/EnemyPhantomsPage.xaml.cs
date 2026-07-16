@@ -95,6 +95,13 @@ public sealed partial class EnemyPhantomsPage : Page
         _timer.Start();
     }
 
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        _pageCts = new();
+        _timer.Start();
+    }
+
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         _timer.Stop();

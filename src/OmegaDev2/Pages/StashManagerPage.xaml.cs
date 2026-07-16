@@ -99,6 +99,12 @@ public sealed partial class StashManagerPage : Page
         ItemsGrid.ItemsSource = ShownItems;
     }
 
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        _pageCts = new();
+    }
+
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         _pageCts?.Cancel();

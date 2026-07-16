@@ -84,6 +84,12 @@ public sealed partial class PhantomsPage : Page
         SquadList.ItemsSource = Squads;
     }
 
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        _pageCts = new();
+    }
+
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         _pageCts?.Cancel();
@@ -250,6 +256,7 @@ public sealed partial class PhantomsPage : Page
             _api.BaseUrl = AppState.ServerUrl;
             int level = (int)LevelBox.Value;
             bool lockLevel = LockLevelCheck.IsChecked == true;
+            bool bypassCap = BypassCapCheck.IsChecked == true;
 
             PhantomSpawnResponse? resp;
             if (_selectedHero != null)
@@ -262,6 +269,7 @@ public sealed partial class PhantomsPage : Page
                 resp = await _api.PostPhantomSpawnAsync(new
                 {
                     playerName = TargetPlayer,
+                    bypassCap,
                     heroes = new[]
                     {
                         new { avatarRef = _selectedHero.Entry.ProtoRef, level, lockLevel, costumeRef },
@@ -276,6 +284,7 @@ public sealed partial class PhantomsPage : Page
                     count = (int)CountBox.Value,
                     level,
                     lockLevel,
+                    bypassCap,
                 });
             }
 

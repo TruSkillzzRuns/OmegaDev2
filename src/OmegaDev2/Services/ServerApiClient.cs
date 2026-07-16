@@ -322,8 +322,8 @@ public sealed class ServerApiClient : IDisposable
     public Task<PhantomOpResponse?> PostPhantomGearAsync(string playerName, string? phantomQuery, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/gear", new { playerName, phantomQuery }, ct);
 
-    public Task<PhantomOpResponse?> PostPhantomSquadOpAsync(string playerName, string op, string name, CancellationToken ct = default)
-        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/squads", new { playerName, op, name }, ct);
+    public Task<PhantomOpResponse?> PostPhantomSquadOpAsync(string playerName, string op, string name, bool bypassCap = false, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/squads", new { playerName, op, name, bypassCap }, ct);
 
     public Task<PhantomOpResponse?> PostPhantomSquadSaveListAsync(string playerName, string name, object members, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/squads", new { playerName, op = "savelist", name, members }, ct);
@@ -403,6 +403,24 @@ public sealed class ServerApiClient : IDisposable
 
     public Task<PhantomOpResponse?> PostDpsResetAsync(CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/dps/reset", new { }, ct);
+
+    // ---- Leaderboard ----
+    public Task<LeaderboardResponse?> GetLeaderboardAsync(string player, string? kind = null, string? hero = null, CancellationToken ct = default)
+    {
+        string url = $"webapi/leaderboard?player={Uri.EscapeDataString(player ?? "*")}";
+        if (string.IsNullOrWhiteSpace(kind) == false) url += $"&kind={Uri.EscapeDataString(kind)}";
+        if (string.IsNullOrWhiteSpace(hero) == false) url += $"&hero={Uri.EscapeDataString(hero)}";
+        return GetJsonAsync<LeaderboardResponse>(url, ct);
+    }
+
+    public Task<PhantomOpResponse?> PostLeaderboardCommitDpsAsync(string playerName, string heroName, double dpsValue, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/leaderboard/commit-dps", new { playerName, heroName, dpsValue }, ct);
+
+    public Task<PhantomOpResponse?> PostLeaderboardDeleteAsync(string playerName, string id, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/leaderboard/delete", new { playerName, id }, ct);
+
+    public Task<PhantomOpResponse?> PostLeaderboardClearAsync(string playerName, string? kind = null, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/leaderboard/clear", new { playerName, kind }, ct);
 
     // ---- Command Console ----
     public Task<ConsoleExecResponse?> PostConsoleExecAsync(string command, string? playerName, CancellationToken ct = default)
@@ -658,10 +676,30 @@ public sealed class DpsCombatant
     public string Name { get; set; } = "";
     public bool IsPhantom { get; set; }
     public long Total { get; set; }
+    public long PeakHit { get; set; }
     public double Dps10 { get; set; }
     public double Dps60 { get; set; }
     public double DpsOverall { get; set; }
     public long SecondsSinceLastHit { get; set; }
+}
+
+public sealed class LeaderboardResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public System.Collections.Generic.List<LeaderboardEntry> Entries { get; set; } = new();
+}
+
+public sealed class LeaderboardEntry
+{
+    public string Id { get; set; } = "";
+    public string Kind { get; set; } = "";
+    public string HeroName { get; set; } = "";
+    public string? RegionName { get; set; }
+    public string? DifficultyTier { get; set; }
+    public double Value { get; set; }
+    public long TimestampMs { get; set; }
+    public bool Completed { get; set; } = true;
 }
 
 public sealed class ConsoleExecResponse

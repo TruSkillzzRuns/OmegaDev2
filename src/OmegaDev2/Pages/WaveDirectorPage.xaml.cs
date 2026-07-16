@@ -205,6 +205,12 @@ public sealed partial class WaveDirectorPage : Page
         ArenaCombo.SelectedIndex = 0;
     }
 
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        _timer.Start();
+    }
+
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         _timer.Stop();

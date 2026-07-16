@@ -78,6 +78,7 @@ public sealed partial class MainWindow : Window
             "phantoms"      => typeof(PhantomsPage),
             "squadbuilder"  => typeof(SquadBuilderPage),
             "dpsmeter"      => typeof(DpsMeterPage),
+            "leaderboard"   => typeof(LeaderboardPage),
             "enemyphantoms" => typeof(EnemyPhantomsPage),
             "wavedirector"  => typeof(WaveDirectorPage),
             "stashmanager"  => typeof(StashManagerPage),

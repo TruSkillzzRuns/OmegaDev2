@@ -1,9 +1,10 @@
-<Page
+﻿<Page
     x:Class="OmegaDev2.Pages.PhantomsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:OmegaDev2.Pages"
-    Background="{ThemeResource OmegaDev2.PageBackgroundBrush}">
+    Background="{ThemeResource OmegaDev2.PageBackgroundBrush}"
+    NavigationCacheMode="Enabled">
 
     <Grid Padding="24,20,24,16">
         <Grid.RowDefinitions>
@@ -207,6 +208,9 @@
                                 <NumberBox x:Name="LevelBox" Header="Level (0 = match)" Value="0" Minimum="0" Maximum="60" SpinButtonPlacementMode="Compact" Width="180" />
                             </StackPanel>
                             <CheckBox x:Name="LockLevelCheck" Content="Lock level (no auto-level with player)" IsChecked="True" />
+                            <CheckBox x:Name="BypassCapCheck"
+                                      Content="Bypass party/raid size limit"
+                                      ToolTipService.ToolTip="Ignores the game's real party (5) / raid (10) size cap for this spawn" />
                             <Button x:Name="SpawnBtn"
                                     Content="Spawn"
                                     Click="Spawn_Click"

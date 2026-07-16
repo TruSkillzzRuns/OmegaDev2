@@ -20,6 +20,7 @@ public sealed class DpsRow
     public string Name { get; }
     public string IdleText { get; }
     public string TotalText { get; }
+    public string PeakHitText { get; }
     public string Dps10Text { get; }
     public string DpsAllText { get; }
     public double BarWidth { get; }
@@ -30,6 +31,7 @@ public sealed class DpsRow
         Name = c.Name;
         IdleText = c.SecondsSinceLastHit >= 10 ? $"  (idle {FormatDuration(c.SecondsSinceLastHit)})" : "";
         TotalText = FormatNumber(c.Total);
+        PeakHitText = FormatNumber(c.PeakHit);
         Dps10Text = FormatNumber((long)c.Dps10);
         DpsAllText = FormatNumber((long)c.DpsOverall);
         // Bars scale relative to the top damage dealer; keep a sliver visible
@@ -57,6 +59,7 @@ public sealed partial class DpsMeterPage : Page
     private readonly ServerApiClient _api = new();
     private readonly DispatcherQueueTimer _timer;
     private bool _fetchInFlight;
+    private List<DpsCombatant> _lastCombatants = new();
     public ObservableCollection<DpsRow> Rows { get; } = new();
 
     public DpsMeterPage()
@@ -72,6 +75,12 @@ public sealed partial class DpsMeterPage : Page
 
         _timer.Start();
         _ = FetchAsync();
+    }
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        if (LiveToggle.IsChecked == true) _timer.Start();
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -96,6 +105,7 @@ public sealed partial class DpsMeterPage : Page
             }
 
             long maxTotal = resp.Combatants.Count > 0 ? resp.Combatants.Max(c => c.Total) : 0;
+            _lastCombatants = resp.Combatants;
 
             Rows.Clear();
             foreach (var c in resp.Combatants)
@@ -130,6 +140,29 @@ public sealed partial class DpsMeterPage : Page
         if (_timer == null) return;
         LiveToggle.Content = "Paused";
         _timer.Stop();
+    }
+
+    private async void SaveToLeaderboard_Click(object sender, RoutedEventArgs e)
+    {
+        // Combatants are already sorted by Total damage descending (server-side).
+        var top = _lastCombatants.FirstOrDefault();
+        if (top == null || top.DpsOverall <= 0)
+        {
+            StatusText.Text = "nothing to save — no damage recorded yet";
+            return;
+        }
+
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            string player = string.IsNullOrWhiteSpace(PlayerBox.Text) ? "*" : PlayerBox.Text.Trim();
+            var resp = await _api.PostLeaderboardCommitDpsAsync(player, top.Name, top.DpsOverall);
+            StatusText.Text = resp?.Message ?? resp?.Error ?? "no response";
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = $"error: {ex.Message}";
+        }
     }
 
     private async void Reset_Click(object sender, RoutedEventArgs e)

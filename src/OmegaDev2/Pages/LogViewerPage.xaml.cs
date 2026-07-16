@@ -66,6 +66,12 @@ public sealed partial class LogViewerPage : Page
         _ = FetchAsync();
     }
 
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        if (FollowToggle.IsChecked == true) _timer.Start();
+    }
+
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         _timer.Stop();
