@@ -221,15 +221,42 @@ public static class UpdateCheckService
         //    * robocopies staging → install dir (/MIR would delete unmatched
         //      files including user's Config.ini — /E preserves those)
         //    * relaunches OmegaDev2.exe
+        //
+        // Retry/wait was previously /R:2 /W:1 (2 attempts, 1s apart — up to
+        // ~2s total) with ALL robocopy output suppressed (/NFL /NDL /NJH
+        // /NJS | Out-Null) and the exit code never checked. If our own
+        // process's DLL was still momentarily locked (AV scan, slow
+        // teardown, WebView2 lingering) that window silently wasn't long
+        // enough, robocopy would skip the locked file without a trace, and
+        // we'd relaunch a half-updated install — new pages/resources next to
+        // a stale assembly. That's the leading theory for a real user's
+        // "update ran, then CTD on clicking heroes, fixed by manually
+        // rebuilding" report. Widened the retry window and made failures
+        // observable instead of silent.
         int ourPid = Environment.ProcessId;
         string esc(string s) => s.Replace("'", "''");
+        string logPath = Path.Combine(Path.GetTempPath(), $"OmegaDev2_update_v{safeVer}.log");
+        string appDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OmegaDev2");
+        string markerPath = Path.Combine(appDataDir, "update_failed.json");
         string script =
             $"try {{ Wait-Process -Id {ourPid} -ErrorAction Stop -Timeout 30 }} catch {{ }}; " +
             $"Start-Sleep -Milliseconds 500; " +
             // /E copies subdirs including empty; /IS overwrites same-size files
             // (needed when the timestamp trick doesn't detect a real change);
-            // /R:2 /W:1 tightens retry loops so a locked file doesn't wedge us.
-            $"robocopy '{esc(sourceDir)}' '{esc(installDir)}' /E /IS /R:2 /W:1 /NFL /NDL /NJH /NJS | Out-Null; " +
+            // /R:6 /W:2 gives a locked file up to ~12s of retries instead of
+            // ~2s; /LOG replaces the old fully-suppressed output so a failed
+            // copy leaves a real trail instead of nothing.
+            $"robocopy '{esc(sourceDir)}' '{esc(installDir)}' /E /IS /R:6 /W:2 /LOG:'{esc(logPath)}' | Out-Null; " +
+            $"$code = $LASTEXITCODE; " +
+            // Robocopy exit codes 0-7 are informational success (bitmask of
+            // "files copied"/"extra files"/etc.); 8+ means at least one file
+            // genuinely failed to copy. Leave a marker the app checks on its
+            // next launch instead of pretending the update fully succeeded.
+            $"if ($code -ge 8) {{ " +
+            $"  New-Item -ItemType Directory -Force -Path '{esc(appDataDir)}' | Out-Null; " +
+            $"  $marker = @{{ version = '{esc(version)}'; exitCode = $code; logPath = '{esc(logPath)}'; timestamp = (Get-Date).ToString('o') }} | ConvertTo-Json; " +
+            $"  Set-Content -Path '{esc(markerPath)}' -Value $marker; " +
+            $"}} else {{ Remove-Item -Path '{esc(markerPath)}' -ErrorAction SilentlyContinue }}; " +
             $"Start-Process -FilePath '{esc(Path.Combine(installDir, "OmegaDev2.exe"))}'";
 
         var psi = new ProcessStartInfo
@@ -249,6 +276,36 @@ public static class UpdateCheckService
         {
             return false;
         }
+    }
+
+    /// <summary>Marker left by a self-update whose robocopy step reported a genuine failure (exit code >= 8).</summary>
+    public sealed class UpdateFailureInfo
+    {
+        [JsonPropertyName("version")]   public string Version { get; set; } = string.Empty;
+        [JsonPropertyName("exitCode")]  public int ExitCode { get; set; }
+        [JsonPropertyName("logPath")]   public string LogPath { get; set; } = string.Empty;
+        [JsonPropertyName("timestamp")] public string Timestamp { get; set; } = string.Empty;
+    }
+
+    private static string MarkerPath =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OmegaDev2", "update_failed.json");
+
+    /// <summary>Checks for a marker left by an incomplete update. Call once at startup.</summary>
+    public static UpdateFailureInfo? CheckForFailedUpdate()
+    {
+        try
+        {
+            if (!File.Exists(MarkerPath)) return null;
+            string json = File.ReadAllText(MarkerPath);
+            return JsonSerializer.Deserialize<UpdateFailureInfo>(json);
+        }
+        catch { return null; }
+    }
+
+    /// <summary>Clears the failed-update marker once the user has been shown it.</summary>
+    public static void ClearFailedUpdateMarker()
+    {
+        try { if (File.Exists(MarkerPath)) File.Delete(MarkerPath); } catch { }
     }
 
     public readonly record struct DownloadProgress(long BytesReceived, long? TotalBytes)

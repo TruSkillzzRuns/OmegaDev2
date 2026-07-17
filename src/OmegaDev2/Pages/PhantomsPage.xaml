@@ -118,7 +118,7 @@
             </Border>
 
             <!-- Middle: Pivot between quick-spawn/active and lineup builder -->
-            <Pivot Grid.Column="1" Margin="0,0,12,0">
+            <Pivot x:Name="MainPivot" Grid.Column="1" Margin="0,0,12,0">
                 <PivotItem Header="Quick Spawn &amp; Active">
                     <Grid>
                         <Grid.RowDefinitions>

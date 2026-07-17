@@ -41,6 +41,29 @@ public sealed partial class MainWindow : Window
         _pingTimer.Tick += async (_, _) => await PingAsync();
         _pingTimer.Start();
         _ = PingAsync(); // kick off immediately, don't wait 3s
+
+        _ = WarnIfLastUpdateFailedAsync();
+    }
+
+    // Surfaces a warning once if the self-updater's robocopy step left a
+    // failure marker (see UpdateCheckService.DownloadAndInstallAsync) —
+    // otherwise a half-updated install silently launches with no
+    // indication anything went wrong until something crashes.
+    private async System.Threading.Tasks.Task WarnIfLastUpdateFailedAsync()
+    {
+        var info = UpdateCheckService.CheckForFailedUpdate();
+        if (info == null) return;
+        UpdateCheckService.ClearFailedUpdateMarker();
+
+        var dlg = new ContentDialog
+        {
+            Title = "Last update may be incomplete",
+            Content = $"The update to v{info.Version} reported {info.ExitCode} file copy failure(s) — some files may not have been replaced. " +
+                      $"If anything looks broken, re-run the update from Settings, or reinstall fresh.\n\nDetails: {info.LogPath}",
+            CloseButtonText = "OK",
+            XamlRoot = Content.XamlRoot,
+        };
+        try { await dlg.ShowAsync(); } catch { }
     }
 
     private void ApplyTheme(PreferencesService.ThemeMode mode)

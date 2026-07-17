@@ -290,6 +290,11 @@ public sealed partial class PhantomsPage : Page
 
         var slot = new LineupSlot(card.Entry, level: 0, lockLevel: false) { Portrait = card.Portrait };
         Lineup.Add(slot);
+        // Jump to the Lineup Builder tab so the add is actually visible —
+        // without this, clicking a roster hero from the Quick Spawn & Active
+        // tab silently updated a Lineup the user wasn't looking at, which
+        // read as "clicking heroes does nothing."
+        MainPivot.SelectedIndex = 1;
         await LoadCostumesIntoSlotAsync(slot, null);
     }
 
@@ -570,6 +575,10 @@ public sealed partial class PhantomsPage : Page
             Lineup.Add(slot);
             await LoadCostumesIntoSlotAsync(slot, m.CostumeRef);
         }
+        // Jump to the Lineup Builder tab — without this, Edit silently
+        // populated a Lineup the user wasn't looking at, which read as
+        // "the Edit button does nothing."
+        MainPivot.SelectedIndex = 1;
         SquadStatusText.Text = $"editing '{name}' — Save Squad overwrites it";
     }
 
