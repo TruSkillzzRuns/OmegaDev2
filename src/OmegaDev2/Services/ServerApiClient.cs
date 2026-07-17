@@ -335,6 +335,9 @@ public sealed class ServerApiClient : IDisposable
     public Task<PhantomOpResponse?> PostEnemyPhantomClearAsync(string playerName, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/arena/enemyphantoms/clear", new { playerName }, ct);
 
+    public Task<PhantomOpResponse?> PostEnemyPhantomDespawnOneAsync(string playerName, ulong targetId, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/arena/enemyphantoms/clear", new { playerName, targetId = targetId.ToString() }, ct);
+
     public Task<EnemyPhantomStatusResponse?> GetEnemyPhantomStatusAsync(string player, CancellationToken ct = default)
         => GetJsonAsync<EnemyPhantomStatusResponse>($"webapi/arena/enemyphantoms/status?player={Uri.EscapeDataString(player ?? "*")}", ct);
 
@@ -362,6 +365,9 @@ public sealed class ServerApiClient : IDisposable
 
     public Task<PhantomOpResponse?> PostNemesisClearAsync(string playerName, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/nemesis", new { playerName, action = "clear" }, ct);
+
+    public Task<PhantomOpResponse?> PostNemesisSpawnNowAsync(string playerName, string heroRef, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/nemesis", new { playerName, action = "spawn", heroRef }, ct);
 
     public Task<PhantomOpResponse?> PostWavesStartAsync(object body, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/arena/waves/start", body, ct);
@@ -396,6 +402,35 @@ public sealed class ServerApiClient : IDisposable
 
     public Task<PhantomOpResponse?> PostInventoryDeleteAsync(string playerName, string entityId, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/inventory/delete", new { playerName, entityId }, ct);
+
+    // ---- God Mode ----
+    [Flags]
+    public enum GodModeFlags
+    {
+        None = 0,
+        Invulnerable = 1 << 0,
+        NoEnduranceCosts = 1 << 1,
+        NoCooldowns = 1 << 2,
+        DamageMult = 1 << 3,
+        SpeedMult = 1 << 4,
+        All = Invulnerable | NoEnduranceCosts | NoCooldowns | DamageMult | SpeedMult,
+    }
+
+    public Task<GodModeResponse?> PostGodModeAsync(
+        string playerName, GodModeFlags flags,
+        bool invulnerable, bool noEnduranceCosts, bool noCooldowns,
+        float damageMult, float speedMult,
+        CancellationToken ct = default)
+        => PostJsonAsync<GodModeResponse>("webapi/playeradmin/godmode", new
+        {
+            playerName,
+            flags = (int)flags,
+            invulnerable,
+            noEnduranceCosts,
+            noCooldowns,
+            damageMult,
+            speedMult,
+        }, ct);
 
     // ---- DPS Meter ----
     public Task<DpsResponse?> GetDpsAsync(string player, CancellationToken ct = default)
@@ -528,6 +563,7 @@ public sealed class EnemyPhantomStatusResponse
 
 public sealed class EnemyPhantomEntry
 {
+    public ulong AvatarId { get; set; }
     public string HeroName { get; set; } = "";
     public int Level { get; set; }
     public int HealthPct { get; set; }
@@ -700,6 +736,7 @@ public sealed class LeaderboardEntry
     public double Value { get; set; }
     public long TimestampMs { get; set; }
     public bool Completed { get; set; } = true;
+    public bool IsPersonalBest { get; set; }
 }
 
 public sealed class ConsoleExecResponse
@@ -734,6 +771,23 @@ public sealed class PhantomOpResponse
     public string? Error { get; set; }
     public string? Message { get; set; }
     public int Removed { get; set; }
+}
+
+public sealed class GodModeResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Message { get; set; }
+    public GodModeSnapshot? Snapshot { get; set; }
+}
+
+public sealed class GodModeSnapshot
+{
+    public bool Invulnerable { get; set; }
+    public bool NoEnduranceCosts { get; set; }
+    public bool NoCooldowns { get; set; }
+    public float DamageMult { get; set; } = 1.0f;
+    public float SpeedMult { get; set; } = 1.0f;
 }
 
 public sealed class RegionListResponse

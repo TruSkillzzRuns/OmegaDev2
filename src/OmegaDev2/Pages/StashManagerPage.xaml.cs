@@ -54,6 +54,9 @@ public sealed class StashItemCard : INotifyPropertyChanged
     public InventoryItemEntry Entry { get; }
     public string EntityId => Entry.EntityId;
     public string Name => Entry.Name;
+
+    private bool _selected;
+    public bool Selected { get => _selected; set { _selected = value; Raise(); } }
     public string SubLabel
     {
         get
@@ -153,9 +156,19 @@ public sealed partial class StashManagerPage : Page
                 _currentContainerItems.Add(new StashItemCard(item));
         ApplyItemFilter();
         _ = FetchIconsAsync();
+        UpdateDeleteSelectedUi();
     }
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyItemFilter();
+
+    private void ItemCheck_Changed(object sender, RoutedEventArgs e) => UpdateDeleteSelectedUi();
+
+    private void UpdateDeleteSelectedUi()
+    {
+        int count = _currentContainerItems.Count(c => c.Selected);
+        DeleteSelectedBtn.IsEnabled = count > 0;
+        DeleteSelectedBtn.Content = count > 0 ? $"Delete Selected ({count})" : "Delete Selected";
+    }
 
     private void ApplyItemFilter()
     {
@@ -243,11 +256,57 @@ public sealed partial class StashManagerPage : Page
             {
                 _currentContainerItems.Remove(card);
                 ShownItems.Remove(card);
+                UpdateDeleteSelectedUi();
             }
         }
         catch (Exception ex)
         {
             StatusText.Text = $"error: {ex.Message}";
+        }
+    }
+
+    private async void DeleteSelected_Click(object sender, RoutedEventArgs e)
+    {
+        var targets = _currentContainerItems.Where(c => c.Selected).ToList();
+        if (targets.Count == 0) return;
+
+        var dialog = new ContentDialog
+        {
+            Title = "Delete selected items?",
+            Content = $"Permanently delete {targets.Count} item(s)? This cannot be undone.",
+            PrimaryButtonText = "Delete",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close,
+            XamlRoot = XamlRoot,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+
+        DeleteSelectedBtn.IsEnabled = false;
+        int deleted = 0, failed = 0;
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            foreach (var card in targets)
+            {
+                var resp = await _api.PostInventoryDeleteAsync(TargetPlayer, card.EntityId);
+                if (resp?.Ok == true)
+                {
+                    deleted++;
+                    _currentContainerItems.Remove(card);
+                    ShownItems.Remove(card);
+                }
+                else
+                {
+                    failed++;
+                }
+            }
+            StatusText.Text = failed == 0
+                ? $"deleted {deleted} item(s)"
+                : $"deleted {deleted} item(s), {failed} failed";
+        }
+        finally
+        {
+            UpdateDeleteSelectedUi();
         }
     }
 }

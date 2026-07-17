@@ -3,13 +3,17 @@ using System.Collections.ObjectModel;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using OmegaDev2.Services;
+using Windows.UI;
 
 namespace OmegaDev2.Pages;
 
 public sealed class LeaderboardRow
 {
+    private static readonly Brush s_bestBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0xC1, 0x07));
+
     public string Id { get; }
     public int Rank { get; }
     public string KindBadge { get; }
@@ -17,6 +21,8 @@ public sealed class LeaderboardRow
     public string ValueText { get; }
     public string RegionText { get; }
     public string WhenText { get; }
+    public string BestBadgeText { get; }
+    public Brush ValueBrush { get; }
 
     public LeaderboardRow(int rank, LeaderboardEntry e)
     {
@@ -32,6 +38,12 @@ public sealed class LeaderboardRow
         string regionLabel = isTerminal && e.RegionName != null ? $"{e.RegionName} ({e.DifficultyTier})" : "";
         RegionText = isTerminal && e.Completed == false ? $"{regionLabel} — aborted".Trim() : regionLabel;
         WhenText = DateTimeOffset.FromUnixTimeMilliseconds(e.TimestampMs).LocalDateTime.ToString("MM/dd HH:mm");
+        // Personal best is computed fresh server-side every read (see
+        // Player.Leaderboard.cs MarkPersonalBests) — per-hero for DPS
+        // parses, per hero+region+tier (completed runs only) for terminal
+        // runs, so this always reflects the current best, not a stale flag.
+        BestBadgeText = e.IsPersonalBest ? "★ BEST" : "";
+        ValueBrush = e.IsPersonalBest ? s_bestBrush : (Brush)Application.Current.Resources["OmegaDev2.TextPrimaryBrush"];
     }
 
     private static string FormatDuration(double ms)

@@ -7,6 +7,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.UI.Text;
+using Windows.UI.Text;
 using OmegaDev2.Services;
 using Windows.UI;
 
@@ -14,22 +16,37 @@ namespace OmegaDev2.Pages;
 
 public sealed class DpsRow
 {
+    // Rank-tiered bar colors: gold / silver / bronze / everyone else (teal for
+    // the player, purple for phantoms, same scheme as before but dimmer).
+    private static readonly Brush s_goldBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0xC1, 0x07));
+    private static readonly Brush s_silverBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0xC7, 0xD1, 0xDB));
+    private static readonly Brush s_bronzeBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0xCD, 0x7F, 0x32));
     private static readonly Brush s_playerBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0x2E, 0xC8, 0xC8));
     private static readonly Brush s_phantomBrush = new SolidColorBrush(Color.FromArgb(0xFF, 0x9B, 0x59, 0xD0));
+    private static readonly Brush s_leaderRowBrush = new SolidColorBrush(Color.FromArgb(0x22, 0xFF, 0xC1, 0x07));
+    private static readonly Brush s_transparentBrush = new SolidColorBrush(Color.FromArgb(0x00, 0x00, 0x00, 0x00));
 
     public string Name { get; }
     public string IdleText { get; }
+    public string RankText { get; }
+    public string CrownText { get; }
+    public string PercentText { get; }
     public string TotalText { get; }
     public string PeakHitText { get; }
     public string Dps10Text { get; }
     public string DpsAllText { get; }
     public double BarWidth { get; }
     public Brush BarBrush { get; }
+    public Brush RowBackground { get; }
+    public FontWeight NameWeight { get; }
 
-    public DpsRow(DpsCombatant c, long maxTotal)
+    public DpsRow(DpsCombatant c, long maxTotal, long teamTotal, int rank)
     {
         Name = c.Name;
         IdleText = c.SecondsSinceLastHit >= 10 ? $"  (idle {FormatDuration(c.SecondsSinceLastHit)})" : "";
+        RankText = $"#{rank}";
+        CrownText = rank == 1 && c.Total > 0 ? "👑 " : "";
+        PercentText = teamTotal > 0 ? $"{100.0 * c.Total / teamTotal:0.#}%" : "—";
         TotalText = FormatNumber(c.Total);
         PeakHitText = FormatNumber(c.PeakHit);
         Dps10Text = FormatNumber((long)c.Dps10);
@@ -37,7 +54,15 @@ public sealed class DpsRow
         // Bars scale relative to the top damage dealer; keep a sliver visible
         // for anyone on the board at all.
         BarWidth = maxTotal > 0 ? Math.Max(4.0, 420.0 * c.Total / maxTotal) : 4.0;
-        BarBrush = c.IsPhantom ? s_phantomBrush : s_playerBrush;
+        BarBrush = rank switch
+        {
+            1 => s_goldBrush,
+            2 => s_silverBrush,
+            3 => s_bronzeBrush,
+            _ => c.IsPhantom ? s_phantomBrush : s_playerBrush,
+        };
+        RowBackground = rank == 1 && c.Total > 0 ? s_leaderRowBrush : s_transparentBrush;
+        NameWeight = rank == 1 && c.Total > 0 ? FontWeights.SemiBold : FontWeights.Normal;
     }
 
     public static string FormatNumber(long n) => n switch
@@ -60,6 +85,12 @@ public sealed partial class DpsMeterPage : Page
     private readonly DispatcherQueueTimer _timer;
     private bool _fetchInFlight;
     private List<DpsCombatant> _lastCombatants = new();
+    // Armed whenever the top combatant is actively taking hits; disarmed the
+    // moment an auto-save actually fires, so a parse only gets auto-saved
+    // once per idle period instead of every poll tick while it sits idle.
+    // Re-arms automatically the next time combat resumes.
+    private bool _autoSaveArmed = true;
+    private const long AutoSaveIdleSeconds = 10;
     public ObservableCollection<DpsRow> Rows { get; } = new();
 
     public DpsMeterPage()
@@ -106,16 +137,19 @@ public sealed partial class DpsMeterPage : Page
 
             long maxTotal = resp.Combatants.Count > 0 ? resp.Combatants.Max(c => c.Total) : 0;
             _lastCombatants = resp.Combatants;
+            long teamTotal = resp.Combatants.Sum(c => c.Total);
 
             Rows.Clear();
-            foreach (var c in resp.Combatants)
-                Rows.Add(new DpsRow(c, maxTotal));
+            for (int i = 0; i < resp.Combatants.Count; i++)
+                Rows.Add(new DpsRow(resp.Combatants[i], maxTotal, teamTotal, i + 1));
 
-            long teamTotal = resp.Combatants.Sum(c => c.Total);
             double teamDps10 = resp.Combatants.Sum(c => c.Dps10);
             StatusText.Text = resp.Combatants.Count == 0
                 ? $"no damage recorded yet · meter running {resp.SecondsSinceReset}s"
                 : $"team: {DpsRow.FormatNumber(teamTotal)} total · {DpsRow.FormatNumber((long)teamDps10)} DPS (10s) · meter {resp.SecondsSinceReset}s";
+
+            if (AutoSaveCheck.IsChecked == true)
+                await MaybeAutoSaveAsync(player);
         }
         catch (Exception ex)
         {
@@ -140,6 +174,40 @@ public sealed partial class DpsMeterPage : Page
         if (_timer == null) return;
         LiveToggle.Content = "Paused";
         _timer.Stop();
+    }
+
+    // Auto-commits the top parse to the Leaderboard once combat has gone
+    // idle, without needing a manual "Save to Leaderboard" click. Reuses
+    // the exact same commit call the button does. Guarded by
+    // _autoSaveArmed so it fires exactly once per idle period — re-arms
+    // the moment fresh damage comes in (new fight), not on a timer.
+    private async System.Threading.Tasks.Task MaybeAutoSaveAsync(string player)
+    {
+        var top = _lastCombatants.FirstOrDefault();
+        if (top == null || top.DpsOverall <= 0)
+        {
+            _autoSaveArmed = true;
+            return;
+        }
+
+        if (top.SecondsSinceLastHit < AutoSaveIdleSeconds)
+        {
+            _autoSaveArmed = true;
+            return;
+        }
+
+        if (_autoSaveArmed == false) return;
+        _autoSaveArmed = false;
+
+        try
+        {
+            var resp = await _api.PostLeaderboardCommitDpsAsync(player, top.Name, top.DpsOverall);
+            StatusText.Text = $"auto-saved: {resp?.Message ?? resp?.Error ?? "no response"}";
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = $"auto-save error: {ex.Message}";
+        }
     }
 
     private async void SaveToLeaderboard_Click(object sender, RoutedEventArgs e)

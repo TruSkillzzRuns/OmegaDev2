@@ -44,6 +44,11 @@
                          PlaceholderText="filter items..."
                          TextChanged="SearchBox_TextChanged"
                          VerticalAlignment="Center" />
+                <Button x:Name="DeleteSelectedBtn"
+                        Content="Delete Selected"
+                        IsEnabled="False"
+                        Click="DeleteSelected_Click"
+                        ToolTipService.ToolTip="Delete every checked item in the current container" />
                 <TextBlock x:Name="StatusText"
                            VerticalAlignment="Center"
                            Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
@@ -111,22 +116,29 @@
                                     <Grid Grid.Row="0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <Image Grid.Column="0"
+                                        <CheckBox Grid.Column="0"
+                                                  IsChecked="{x:Bind Selected, Mode=TwoWay}"
+                                                  Checked="ItemCheck_Changed"
+                                                  Unchecked="ItemCheck_Changed"
+                                                  VerticalAlignment="Top"
+                                                  Margin="0,0,4,0" />
+                                        <Image Grid.Column="1"
                                                Width="48" Height="48"
                                                VerticalAlignment="Top"
                                                Source="{x:Bind Icon, Mode=OneWay}"
                                                Stretch="Uniform"
                                                Margin="0,0,8,0" />
-                                        <TextBlock Grid.Column="1"
+                                        <TextBlock Grid.Column="2"
                                                    Text="{x:Bind Name}"
                                                    FontSize="13"
                                                    TextWrapping="Wrap"
                                                    TextTrimming="CharacterEllipsis"
                                                    MaxLines="3" />
-                                        <Button Grid.Column="2"
+                                        <Button Grid.Column="3"
                                                 Content="✕"
                                                 FontSize="10"
                                                 Padding="6,2"

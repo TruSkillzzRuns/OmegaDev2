@@ -1,0 +1,176 @@
+<Page
+    x:Class="OmegaDev2.Pages.ConfigEditorPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:OmegaDev2.Pages"
+    Background="{ThemeResource OmegaDev2.PageBackgroundBrush}"
+    NavigationCacheMode="Enabled">
+
+    <Grid Padding="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,14">
+            <TextBlock Text="Config Editor"
+                       FontSize="32"
+                       FontWeight="SemiBold"
+                       Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+            <TextBlock Text="Edit your server's Config.ini or the game client's engine config directly. Load your own file — nothing is assumed or shipped. Every save backs up the pre-edit file once (.bak) so a bad edit has a way back; only the value half of a setting is ever touched, everything else in the file passes through untouched."
+                       FontSize="13"
+                       TextWrapping="Wrap"
+                       MaxWidth="960"
+                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+        </StackPanel>
+
+        <Pivot Grid.Row="1">
+            <PivotItem Header="Server Config.ini">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="14,10"
+                            Margin="0,0,0,12">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Button Content="Load Config" Click="LoadServerConfig_Click" />
+                            <Button Content="Save Changes" Click="SaveServerConfig_Click" Style="{ThemeResource AccentButtonStyle}" />
+                            <TextBlock x:Name="ServerPathText"
+                                       VerticalAlignment="Center"
+                                       FontFamily="Consolas"
+                                       FontSize="12"
+                                       Opacity="0.7"
+                                       Text="no file loaded" />
+                            <TextBlock x:Name="ServerStatusText"
+                                       VerticalAlignment="Center"
+                                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="1"
+                            Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="14">
+                        <ScrollViewer>
+                            <ItemsControl x:Name="ServerSections">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="local:IniSection">
+                                        <StackPanel Margin="0,4,0,14">
+                                            <TextBlock Text="{x:Bind Name}"
+                                                       FontWeight="SemiBold"
+                                                       FontSize="13"
+                                                       CharacterSpacing="40"
+                                                       Foreground="{ThemeResource OmegaDev2.AccentBrush}"
+                                                       Margin="0,0,0,6" />
+                                            <ItemsControl ItemsSource="{x:Bind Rows}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="local:IniKeyRow">
+                                                        <Grid Margin="0,2" ColumnSpacing="12">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="260" />
+                                                                <ColumnDefinition Width="*" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0"
+                                                                       Text="{x:Bind Key}"
+                                                                       FontFamily="Consolas"
+                                                                       FontSize="12"
+                                                                       TextWrapping="Wrap"
+                                                                       VerticalAlignment="Center" />
+                                                            <TextBox Grid.Column="1"
+                                                                     Text="{x:Bind Value, Mode=TwoWay}"
+                                                                     FontFamily="Consolas"
+                                                                     FontSize="12" />
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </PivotItem>
+
+            <PivotItem Header="Client Engine Config">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="14,10"
+                            Margin="0,0,0,12">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Button Content="Load Config" Click="LoadClientConfig_Click" />
+                            <Button Content="Save Changes" Click="SaveClientConfig_Click" Style="{ThemeResource AccentButtonStyle}" />
+                            <TextBlock x:Name="ClientPathText"
+                                       VerticalAlignment="Center"
+                                       FontFamily="Consolas"
+                                       FontSize="12"
+                                       Opacity="0.7"
+                                       Text="no file loaded" />
+                            <TextBlock x:Name="ClientStatusText"
+                                       VerticalAlignment="Center"
+                                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="1"
+                            Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="14">
+                        <ScrollViewer>
+                            <ItemsControl x:Name="ClientSections">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="local:IniSection">
+                                        <StackPanel Margin="0,4,0,14">
+                                            <TextBlock Text="{x:Bind Name}"
+                                                       FontWeight="SemiBold"
+                                                       FontSize="13"
+                                                       CharacterSpacing="40"
+                                                       Foreground="{ThemeResource OmegaDev2.AccentBrush}"
+                                                       Margin="0,0,0,6" />
+                                            <ItemsControl ItemsSource="{x:Bind Rows}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="local:IniKeyRow">
+                                                        <Grid Margin="0,2" ColumnSpacing="12">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="260" />
+                                                                <ColumnDefinition Width="*" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0"
+                                                                       Text="{x:Bind Key}"
+                                                                       FontFamily="Consolas"
+                                                                       FontSize="12"
+                                                                       TextWrapping="Wrap"
+                                                                       VerticalAlignment="Center" />
+                                                            <TextBox Grid.Column="1"
+                                                                     Text="{x:Bind Value, Mode=TwoWay}"
+                                                                     FontFamily="Consolas"
+                                                                     FontSize="12" />
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </PivotItem>
+        </Pivot>
+    </Grid>
+</Page>

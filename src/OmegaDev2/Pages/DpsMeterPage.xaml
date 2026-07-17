@@ -47,6 +47,11 @@
                 <Button Content="Save to Leaderboard"
                         Click="SaveToLeaderboard_Click"
                         ToolTipService.ToolTip="Save the top damage dealer's overall DPS to the Leaderboard" />
+                <CheckBox x:Name="AutoSaveCheck"
+                          Content="Auto-save"
+                          IsChecked="True"
+                          VerticalAlignment="Center"
+                          ToolTipService.ToolTip="Automatically save the top parse to the Leaderboard once combat goes idle for 10s — no manual click needed" />
                 <TextBlock x:Name="StatusText"
                            VerticalAlignment="Center"
                            Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
@@ -66,46 +71,59 @@
 
                 <Grid Grid.Row="0" Margin="8,0,8,8">
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="36" />
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="70" />
                         <ColumnDefinition Width="120" />
                         <ColumnDefinition Width="120" />
                         <ColumnDefinition Width="120" />
                         <ColumnDefinition Width="120" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="COMBATANT" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
-                    <TextBlock Grid.Column="1" Text="TOTAL" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
-                    <TextBlock Grid.Column="2" Text="PEAK BURST" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
-                    <TextBlock Grid.Column="3" Text="DPS (10s)" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
-                    <TextBlock Grid.Column="4" Text="DPS (fight)" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <TextBlock Grid.Column="1" Text="COMBATANT" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <TextBlock Grid.Column="2" Text="SHARE" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <TextBlock Grid.Column="3" Text="TOTAL" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <TextBlock Grid.Column="4" Text="PEAK BURST" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <TextBlock Grid.Column="5" Text="DPS (10s)" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <TextBlock Grid.Column="6" Text="DPS (fight)" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160" HorizontalAlignment="Right" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
                 </Grid>
 
                 <ListView x:Name="DpsList" Grid.Row="1" SelectionMode="None">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="local:DpsRow">
-                            <Grid Margin="0,4">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="120" />
-                                    <ColumnDefinition Width="120" />
-                                    <ColumnDefinition Width="120" />
-                                    <ColumnDefinition Width="120" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,12,0">
-                                    <TextBlock FontSize="13" TextWrapping="Wrap">
-                                        <Run Text="{x:Bind Name}" />
-                                        <Run Text="{x:Bind IdleText}" Foreground="Gray" />
-                                    </TextBlock>
-                                    <Border Height="12"
-                                            CornerRadius="3"
-                                            Width="{x:Bind BarWidth}"
-                                            HorizontalAlignment="Left"
-                                            Background="{x:Bind BarBrush}" />
-                                </StackPanel>
-                                <TextBlock Grid.Column="1" Text="{x:Bind TotalText}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="2" Text="{x:Bind PeakHitText}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" ToolTipService.ToolTip="Biggest damage burst this parse — groups hits from the same cast (multi-target AOE, beam sweeps, bounces) landing within ~150ms of each other" />
-                                <TextBlock Grid.Column="3" Text="{x:Bind Dps10Text}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="4" Text="{x:Bind DpsAllText}" FontSize="13" Opacity="0.75" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                            </Grid>
+                            <Border Background="{x:Bind RowBackground}"
+                                    CornerRadius="4"
+                                    Padding="6,4"
+                                    Margin="0,2">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="36" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="70" />
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="120" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{x:Bind RankText}" FontSize="13" FontWeight="SemiBold" Opacity="0.6" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="4" Margin="0,0,12,0">
+                                        <TextBlock FontSize="13" TextWrapping="Wrap">
+                                            <Run Text="{x:Bind CrownText}" />
+                                            <Run Text="{x:Bind Name}" FontWeight="{x:Bind NameWeight}" />
+                                            <Run Text="{x:Bind IdleText}" Foreground="Gray" />
+                                        </TextBlock>
+                                        <Border Height="16"
+                                                CornerRadius="4"
+                                                Width="{x:Bind BarWidth}"
+                                                HorizontalAlignment="Left"
+                                                Background="{x:Bind BarBrush}" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Text="{x:Bind PercentText}" FontSize="13" Opacity="0.75" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="3" Text="{x:Bind TotalText}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="4" Text="{x:Bind PeakHitText}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" ToolTipService.ToolTip="Biggest damage burst this parse — groups hits from the same cast (multi-target AOE, beam sweeps, bounces) landing within ~150ms of each other" />
+                                    <TextBlock Grid.Column="5" Text="{x:Bind Dps10Text}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="6" Text="{x:Bind DpsAllText}" FontSize="13" Opacity="0.75" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>

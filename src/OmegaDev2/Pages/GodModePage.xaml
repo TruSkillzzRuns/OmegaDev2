@@ -1,0 +1,204 @@
+<Page
+    x:Class="OmegaDev2.Pages.GodModePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:OmegaDev2.Pages"
+    Background="{ThemeResource OmegaDev2.PageBackgroundBrush}"
+    NavigationCacheMode="Required">
+
+    <ScrollViewer VerticalScrollMode="Auto" VerticalScrollBarVisibility="Auto">
+        <Grid Padding="24,20,24,16" RowSpacing="14">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <StackPanel Grid.Row="0" Spacing="4">
+                <TextBlock Text="God Mode"
+                           FontSize="32"
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                <TextBlock FontSize="13"
+                           TextWrapping="Wrap"
+                           MaxWidth="900"
+                           Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}"
+                           Text="Player buff cabinet. Toggles and sliders apply live to your current avatar's PropertyCollection — no client restart needed. Every change round-trips to the server and the response snapshot resyncs the UI." />
+                <TextBox x:Name="PlayerBox"
+                         Width="220"
+                         PlaceholderText="player (* = first online)"
+                         Text="*"
+                         HorizontalAlignment="Left"
+                         Margin="0,6,0,0" />
+            </StackPanel>
+
+            <!-- MASTER GOD MODE BANNER -->
+            <Border Grid.Row="1"
+                    Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                    BorderBrush="{ThemeResource OmegaDev2.AccentBrush}"
+                    BorderThickness="1.5"
+                    CornerRadius="8"
+                    Padding="20">
+                <Grid ColumnSpacing="20" VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Text="GOD MODE" FontSize="20" FontWeight="SemiBold" CharacterSpacing="150" />
+                        <TextBlock FontSize="12" Opacity="0.7" TextWrapping="Wrap"
+                                   Text="One click: invulnerability + infinite spirit + no cooldowns + 100x damage + 3x speed. Toggle off to revert everything to baseline." />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" x:Name="MasterToggle" Toggled="MasterToggle_Toggled"
+                                  OnContent="ENGAGED" OffContent="OFF" />
+                </Grid>
+            </Border>
+
+            <!-- INDIVIDUAL TOGGLES (2x2) -->
+            <Grid Grid.Row="2" ColumnSpacing="12" RowSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Grid.Column="0"
+                        Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                        CornerRadius="6" Padding="16">
+                    <Grid ColumnSpacing="12" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="INVULNERABLE" FontSize="11" FontWeight="SemiBold" CharacterSpacing="120" />
+                            <TextBlock FontSize="11" Opacity="0.6" Text="Hostile damage → 0" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" x:Name="InvulnToggle" Toggled="IndividualToggle_Toggled"
+                                      OnContent="ON" OffContent="OFF" />
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="0" Grid.Column="1"
+                        Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                        CornerRadius="6" Padding="16">
+                    <Grid ColumnSpacing="12" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="INFINITE SPIRIT" FontSize="11" FontWeight="SemiBold" CharacterSpacing="120" />
+                            <TextBlock FontSize="11" Opacity="0.6" Text="Power costs → free" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" x:Name="SpiritToggle" Toggled="IndividualToggle_Toggled"
+                                      OnContent="ON" OffContent="OFF" />
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="1" Grid.Column="0"
+                        Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                        CornerRadius="6" Padding="16">
+                    <Grid ColumnSpacing="12" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="NO COOLDOWNS" FontSize="11" FontWeight="SemiBold" CharacterSpacing="120" />
+                            <TextBlock FontSize="11" Opacity="0.6" Text="Powers off-CD on next activation" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" x:Name="CooldownToggle" Toggled="IndividualToggle_Toggled"
+                                      OnContent="ON" OffContent="OFF" />
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="1" Grid.Column="1"
+                        Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                        CornerRadius="6" Padding="16">
+                    <Grid ColumnSpacing="12" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="RESET TO NORMAL" FontSize="11" FontWeight="SemiBold" CharacterSpacing="120" />
+                            <TextBlock FontSize="11" Opacity="0.6" Text="Clear every God Mode buff" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="Reset" Click="Reset_Click" />
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- DAMAGE MULTIPLIER -->
+            <Border Grid.Row="3"
+                    Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                    CornerRadius="6" Padding="18">
+                <Grid RowSpacing="6" ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
+                        <TextBlock Text="DAMAGE MULTIPLIER" FontSize="11" FontWeight="SemiBold" CharacterSpacing="120" />
+                        <TextBlock FontSize="11" Opacity="0.6" Text="Outgoing damage scalar (DamagePctBonus)" />
+                    </StackPanel>
+                    <TextBlock Grid.Row="0" Grid.Column="1" x:Name="DamageValueText" Text="1.0x"
+                               FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"
+                               Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <Slider Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" x:Name="DamageSlider"
+                            StepFrequency="1" ValueChanged="DamageSlider_ValueChanged" />
+                </Grid>
+            </Border>
+
+            <!-- SPEED MULTIPLIER -->
+            <Border Grid.Row="4"
+                    Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                    CornerRadius="6" Padding="18">
+                <Grid RowSpacing="6" ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
+                        <TextBlock Text="MOVE SPEED" FontSize="11" FontWeight="SemiBold" CharacterSpacing="120" />
+                        <TextBlock FontSize="11" Opacity="0.6" Text="Locomotion speed multiplier" />
+                    </StackPanel>
+                    <TextBlock Grid.Row="0" Grid.Column="1" x:Name="SpeedValueText" Text="1.0x"
+                               FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"
+                               Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <Slider Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" x:Name="SpeedSlider"
+                            StepFrequency="0.1" ValueChanged="SpeedSlider_ValueChanged" />
+                </Grid>
+            </Border>
+
+            <!-- STATUS -->
+            <Border Grid.Row="5"
+                    Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                    CornerRadius="6" Padding="14,10">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="STATUS" FontSize="10" FontWeight="SemiBold" CharacterSpacing="120"
+                               Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <TextBlock x:Name="StatusText" FontSize="12" Opacity="0.85" TextWrapping="Wrap"
+                               IsTextSelectionEnabled="True"
+                               Text="Toggle anything above — server applies live, response shows here." />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</Page>

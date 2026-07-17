@@ -54,6 +54,7 @@ public sealed class EnemyRow
     public string HealthText { get; }
     public double BarWidth { get; }
     public Brush BarBrush { get; }
+    public string AvatarIdText { get; }
 
     public EnemyRow(EnemyPhantomEntry e)
     {
@@ -61,6 +62,7 @@ public sealed class EnemyRow
         HealthText = e.Dead ? "DOWN" : $"{e.HealthPct}%";
         BarWidth = e.Dead ? 0 : Math.Max(2.0, 3.6 * e.HealthPct);
         BarBrush = e.Dead ? s_dead : s_alive;
+        AvatarIdText = e.AvatarId.ToString();
     }
 }
 
@@ -212,9 +214,19 @@ public sealed partial class EnemyPhantomsPage : Page
     {
         _selectedHero = HeroList.SelectedItem as PhantomHeroCard;
         SelectedHeroText.Text = _selectedHero?.Name ?? "(random heroes)";
+        // A specific hero (or a ranked nemesis, which is always exactly one
+        // spawn) means Count doesn't apply — same convention Phantom Heroes'
+        // quick-spawn already uses.
+        CountBox.IsEnabled = _selectedHero == null && RankCombo.SelectedIndex == 0;
     }
 
     private void ClearHeroSelection_Click(object sender, RoutedEventArgs e) => HeroList.SelectedItem = null;
+
+    private void RankCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CountBox == null) return; // parse-time firing
+        CountBox.IsEnabled = _selectedHero == null && RankCombo.SelectedIndex == 0;
+    }
 
     // ---------------- Spawn / clear ----------------
 
@@ -225,6 +237,7 @@ public sealed partial class EnemyPhantomsPage : Page
         try
         {
             _api.BaseUrl = AppState.ServerUrl;
+            int rank = RankCombo.SelectedIndex; // 0 = off, 1-5 = nemesis rank
             var resp = await _api.PostEnemyPhantomSpawnAsync(new
             {
                 playerName = TargetPlayer,
@@ -235,6 +248,7 @@ public sealed partial class EnemyPhantomsPage : Page
                         avatarRef = _selectedHero?.Entry.ProtoRef,
                         level = (int)LevelBox.Value,
                         count = (int)CountBox.Value,
+                        rank,
                     },
                 },
             });
@@ -272,6 +286,19 @@ public sealed partial class EnemyPhantomsPage : Page
         catch (Exception ex) { StatusText.Text = $"error: {ex.Message}"; }
     }
 
+    private async void RemoveOne_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not string idText || ulong.TryParse(idText, out ulong id) == false || id == 0) return;
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.PostEnemyPhantomDespawnOneAsync(TargetPlayer, id);
+            StatusText.Text = resp == null ? "no response" : (resp.Ok ? "removed" : (resp.Error ?? "not found"));
+            await PollEnemiesAsync();
+        }
+        catch (Exception ex) { StatusText.Text = $"error: {ex.Message}"; }
+    }
+
     // ---------------- Live hostiles ----------------
 
     private async Task PollEnemiesAsync()
@@ -286,6 +313,20 @@ public sealed partial class EnemyPhantomsPage : Page
             if (resp != null && resp.Ok)
                 foreach (var enemy in resp.Enemies.OrderByDescending(x => x.HealthPct))
                     Enemies.Add(new EnemyRow(enemy));
+
+            // Piggyback the 1s poll for a compact "your own DPS" readout too
+            // — friendly-phantom vs. enemy-phantom damage can't be split out
+            // server-side yet, but the human player is always the one
+            // non-phantom combatant, so that entry is reliably "you."
+            try
+            {
+                var dps = await _api.GetDpsAsync(TargetPlayer);
+                var you = dps?.Combatants?.FirstOrDefault(c => c.IsPhantom == false);
+                YourDpsText.Text = you != null && you.DpsOverall > 0
+                    ? $"your DPS: {you.DpsOverall:N0}"
+                    : "";
+            }
+            catch { /* non-critical, skip this tick */ }
 
             // Piggyback the 1s poll to keep the Rogue Encounter status
             // fresh — cooldown countdown displays live as it ticks down.
@@ -355,6 +396,19 @@ public sealed partial class EnemyPhantomsPage : Page
                 : $"{active} active, {defeated} defeated  ·  {NemesisEntries.Count} total";
         }
         catch (Exception ex) { NemesisStatusText.Text = $"error: {ex.Message}"; }
+    }
+
+    private async void NemesisFightNow_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not string heroRef) return;
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.PostNemesisSpawnNowAsync(TargetPlayer, heroRef);
+            StatusText.Text = resp?.Message ?? resp?.Error ?? "no response";
+            await PollEnemiesAsync();
+        }
+        catch (Exception ex) { StatusText.Text = $"error: {ex.Message}"; }
     }
 
     private async void NemesisBanish_Click(object sender, RoutedEventArgs e)

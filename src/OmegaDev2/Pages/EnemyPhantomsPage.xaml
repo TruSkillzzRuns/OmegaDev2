@@ -127,6 +127,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0"
                                    Text="Hostiles In Play"
@@ -134,7 +135,14 @@
                                    FontWeight="SemiBold"
                                    VerticalAlignment="Center"
                                    Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
-                        <Button Grid.Column="1" Content="Clear All" Click="ClearAll_Click" />
+                        <TextBlock x:Name="YourDpsText"
+                                   Grid.Column="1"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"
+                                   FontSize="12"
+                                   Opacity="0.75"
+                                   ToolTipService.ToolTip="Your own live DPS — friendly-phantom vs. enemy-phantom damage can't be split out yet, so this is just your own damage output" />
+                        <Button Grid.Column="2" Content="Clear All" Click="ClearAll_Click" />
                     </Grid>
 
                     <ListView x:Name="EnemyList" Grid.Row="1" SelectionMode="None">
@@ -143,7 +151,8 @@
                                 <Grid Margin="0,4">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="90" />
+                                        <ColumnDefinition Width="70" />
+                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,12,0">
                                         <TextBlock Text="{x:Bind Title}" FontSize="13" />
@@ -161,6 +170,15 @@
                                                FontWeight="SemiBold"
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Center" />
+                                    <Button Grid.Column="2"
+                                            Content="✕"
+                                            FontSize="10"
+                                            Padding="6,2"
+                                            Margin="8,0,0,0"
+                                            VerticalAlignment="Center"
+                                            Tag="{x:Bind AvatarIdText}"
+                                            Click="RemoveOne_Click"
+                                            ToolTipService.ToolTip="Despawn just this one" />
                                 </Grid>
                             </DataTemplate>
                         </ListView.ItemTemplate>
@@ -197,6 +215,19 @@
                             <NumberBox x:Name="CountBox" Header="Count" Value="1" Minimum="1" Maximum="20" SpinButtonPlacementMode="Compact" Width="110" />
                             <NumberBox x:Name="LevelBox" Header="Level (0 = match)" Value="0" Minimum="0" Maximum="60" SpinButtonPlacementMode="Compact" Width="180" />
                         </StackPanel>
+                        <ComboBox x:Name="RankCombo"
+                                  Header="Nemesis rank"
+                                  HorizontalAlignment="Stretch"
+                                  SelectedIndex="0"
+                                  SelectionChanged="RankCombo_SelectionChanged"
+                                  ToolTipService.ToolTip="Spawn as a ranked nemesis instead of a plain hostile — same power curve as a real nemesis, and it earns a spot on the Nemesis Roster if it beats you">
+                            <ComboBoxItem Content="Off (plain hostile)" />
+                            <ComboBoxItem Content="Rank 1" />
+                            <ComboBoxItem Content="Rank 2" />
+                            <ComboBoxItem Content="Rank 3" />
+                            <ComboBoxItem Content="Rank 4" />
+                            <ComboBoxItem Content="Rank 5" />
+                        </ComboBox>
                         <Button x:Name="SpawnBtn"
                                 Content="Spawn Hostiles"
                                 Click="Spawn_Click"
@@ -266,6 +297,7 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
                                             <TextBlock Text="{x:Bind Title}" FontSize="13" />
@@ -279,6 +311,13 @@
                                                    VerticalAlignment="Center"
                                                    Margin="0,0,8,0" />
                                         <Button Grid.Column="2"
+                                                Content="Fight Now"
+                                                FontSize="11"
+                                                Margin="0,0,6,0"
+                                                Tag="{x:Bind HeroRef}"
+                                                Click="NemesisFightNow_Click"
+                                                ToolTipService.ToolTip="Spawn this exact nemesis right now, at its current rank — deliberate revenge fight" />
+                                        <Button Grid.Column="3"
                                                 Content="Banish"
                                                 FontSize="11"
                                                 Tag="{x:Bind HeroRef}"
