@@ -49,6 +49,14 @@
                                        VerticalAlignment="Center"
                                        Text="server: disconnected" />
                         </StackPanel>
+                        <Border x:Name="GodModeBanner"
+                                Visibility="Collapsed"
+                                Background="{ThemeResource OmegaDev2.DangerBrush}"
+                                CornerRadius="4"
+                                Padding="8,3"
+                                ToolTipService.ToolTip="A God Mode toggle is currently active on this character — it has no auto-expiration and persists until reset. Go to God Mode → Reset to clear it.">
+                            <TextBlock Text="⚠ GOD MODE ACTIVE" FontSize="10" FontWeight="SemiBold" />
+                        </Border>
                     </StackPanel>
                 </Border>
             </NavigationView.PaneHeader>
@@ -100,6 +108,16 @@
                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE945;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem Content="Live Events" Tag="liveevents">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE787;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Region Events" Tag="regionevents">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE81E;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
 
                 <NavigationViewItemHeader Content="LOOT" />
                 <NavigationViewItem Content="Gear Picker" Tag="gearpicker">
@@ -110,6 +128,11 @@
                 <NavigationViewItem Content="Stash Manager" Tag="stashmanager">
                     <NavigationViewItem.Icon>
                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xF012;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Currency Editor" Tag="currencyeditor">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE719;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
 

@@ -15,6 +15,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <!-- Header -->
@@ -197,6 +198,22 @@
                     <TextBlock x:Name="StatusText" FontSize="12" Opacity="0.85" TextWrapping="Wrap"
                                IsTextSelectionEnabled="True"
                                Text="Toggle anything above — server applies live, response shows here." />
+                </StackPanel>
+            </Border>
+
+            <!-- PRESETS -->
+            <Border Grid.Row="6"
+                    Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                    CornerRadius="6" Padding="14,10">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="PRESETS" FontSize="10" FontWeight="SemiBold" CharacterSpacing="120"
+                               Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <ComboBox x:Name="PresetCombo" Width="220" PlaceholderText="saved presets" />
+                        <Button Content="Load" Click="LoadPreset_Click" />
+                        <Button Content="Save Current As…" Click="SavePreset_Click" />
+                        <Button Content="Delete" Click="DeletePreset_Click" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
         </Grid>

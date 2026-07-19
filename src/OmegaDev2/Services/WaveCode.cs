@@ -49,6 +49,7 @@ public static class WaveCode
         [JsonPropertyName("hn")] public string? HeroName { get; set; }
         [JsonPropertyName("c")]  public int Count { get; set; }
         [JsonPropertyName("l")]  public int Level { get; set; }
+        [JsonPropertyName("r")]  public int Rank { get; set; }
     }
 
     public static string Encode(Payload payload)

@@ -74,6 +74,8 @@ public sealed partial class WaveDirectorPage : Page
         public string? HeroName;
         public int Count;
         public int Level;
+        // Phantoms only; 0 = plain hostile, 1-5 = spawn as a ranked nemesis.
+        public int Rank;
     }
 
     // Hero choices for the enemy-phantom picker. "(random)" is index 0.
@@ -166,17 +168,32 @@ public sealed partial class WaveDirectorPage : Page
         PhantomHeroCombo.SelectedIndex = 0;
     }
 
+    private async void RefreshArenas_Click(object sender, RoutedEventArgs e) => await PopulateArenaComboAsync();
+
     private async Task PopulateArenaComboAsync()
     {
         // Resolve the curated allowlist against the actual region list the
         // server exposes — any entry the server doesn't have (older client
-        // data, custom fork) is silently dropped.
+        // data, custom fork) is silently dropped. Reports exactly what the
+        // server returned instead of silently falling back to "(none)" —
+        // an empty dropdown with no explanation was impossible to diagnose
+        // (server unreachable? zero regions returned? every curated match
+        // filtered out by IsSafe?) until this made the actual cause visible.
         _arenaOptions.Clear();
         try
         {
             _api.BaseUrl = AppState.ServerUrl;
             var resp = await _api.GetRegionListAsync();
-            var byMatch = resp?.Regions ?? new List<RegionListEntry>();
+            if (resp == null)
+            {
+                ArenaStatusText.Text = "no response from server — is it running?";
+                _arenaOptions.Add(new ArenaOption { Label = "(none — spawn where you stand)", ProtoRef = null });
+                ArenaCombo.ItemsSource = _arenaOptions;
+                ArenaCombo.SelectedIndex = 0;
+                return;
+            }
+
+            var byMatch = resp.Regions ?? new List<RegionListEntry>();
 
             _arenaOptions.Add(new ArenaOption { Label = "(none — spawn where you stand)", ProtoRef = null });
 
@@ -184,6 +201,7 @@ public sealed partial class WaveDirectorPage : Page
             // load screen forever). The label is the region name straight
             // from the server's response — source contains only data-file
             // identifiers, not content names.
+            int matched = 0;
             foreach (string match in s_arenaPathMatches)
             {
                 var region = byMatch.FirstOrDefault(r =>
@@ -191,10 +209,14 @@ public sealed partial class WaveDirectorPage : Page
                               || r.Name.Replace(" ", "").Contains(match, StringComparison.OrdinalIgnoreCase)));
                 if (region == null) continue;
                 _arenaOptions.Add(new ArenaOption { Label = region.Name, ProtoRef = region.ProtoRef });
+                matched++;
             }
+
+            ArenaStatusText.Text = $"server returned {byMatch.Count} region(s) total, {matched}/{s_arenaPathMatches.Length} curated arenas matched";
         }
-        catch
+        catch (Exception ex)
         {
+            ArenaStatusText.Text = $"error: {ex.Message}";
             // Server unreachable — offer just the "none" option so Start
             // Run still works locally without an arena warp.
             if (_arenaOptions.Count == 0)
@@ -328,8 +350,9 @@ public sealed partial class WaveDirectorPage : Page
             for (int i = 0; i < _plan[w].Count; i++)
             {
                 PlanEntry entry = _plan[w][i];
+                string rankTag = entry.Rank > 0 ? $"★{entry.Rank} " : "";
                 string label = entry.EnemyPhantom
-                    ? $"     {entry.Count}× Enemy Phantom — {entry.HeroName ?? "random hero"}{(entry.Level > 0 ? $" (lvl {entry.Level})" : "")}"
+                    ? $"     {entry.Count}× {rankTag}Enemy Phantom — {entry.HeroName ?? "random hero"}{(entry.Level > 0 ? $" (lvl {entry.Level})" : "")}"
                     : $"     {entry.Count}× {entry.AgentName}";
                 PlanRows.Add(new WavePlanRow { Title = label, IsHeader = false, RowKey = $"{w}:{i}" });
             }
@@ -359,6 +382,7 @@ public sealed partial class WaveDirectorPage : Page
             HeroName = x.HeroName,
             Count = x.Count,
             Level = x.Level,
+            Rank = x.Rank,
         }).ToList();
         _plan.Add(copy);
         _waveIntermissionOverrides.Add(_waveIntermissionOverrides[^1]);
@@ -400,6 +424,7 @@ public sealed partial class WaveDirectorPage : Page
             HeroName = chosen?.ProtoRef == null ? null : chosen.Label,
             Count = (int)PhantomCountBox.Value,
             Level = (int)PhantomLevelBox.Value,
+            Rank = PhantomRankCombo.SelectedIndex, // 0 = Off, matches the rank value directly
         });
         RefreshPlanRows();
     }
@@ -484,6 +509,7 @@ public sealed partial class WaveDirectorPage : Page
                     enemyPhantom = x.EnemyPhantom,
                     count = x.Count,
                     level = x.Level,
+                    rank = x.Rank,
                 }).ToArray(),
             });
         }
@@ -708,6 +734,7 @@ public sealed partial class WaveDirectorPage : Page
                     HeroName = x.HeroName,
                     Count = x.Count,
                     Level = x.Level,
+                    Rank = x.Rank,
                 });
             }
             payload.Waves.Add(wave);
@@ -807,6 +834,7 @@ public sealed partial class WaveDirectorPage : Page
                 HeroName = x.HeroName,
                 Count = x.Count,
                 Level = x.Level,
+                Rank = x.Rank,
             }).ToList();
             _plan.Add(entries);
             _waveIntermissionOverrides.Add(wave.IntermissionMsOverride);

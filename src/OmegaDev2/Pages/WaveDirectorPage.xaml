@@ -186,6 +186,7 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ComboBox x:Name="PhantomHeroCombo"
                                   Grid.Column="0"
@@ -200,7 +201,20 @@
                                    Grid.Column="2"
                                    Header="Level (0 = match)" Value="0" Minimum="0" Maximum="60"
                                    SpinButtonPlacementMode="Compact" Width="150" />
-                        <Button Grid.Column="3"
+                        <ComboBox x:Name="PhantomRankCombo"
+                                  Grid.Column="3"
+                                  Header="Nemesis rank"
+                                  Width="150"
+                                  SelectedIndex="0"
+                                  ToolTipService.ToolTip="Off = plain hostile phantom. 1-5 = spawn as a ranked nemesis (tankier, hits harder, gets the boss nameplate).">
+                            <ComboBoxItem Content="Off (plain hostile)" />
+                            <ComboBoxItem Content="Rank 1" />
+                            <ComboBoxItem Content="Rank 2" />
+                            <ComboBoxItem Content="Rank 3" />
+                            <ComboBoxItem Content="Rank 4" />
+                            <ComboBoxItem Content="Rank 5" />
+                        </ComboBox>
+                        <Button Grid.Column="4"
                                 Content="Add Enemy Phantoms"
                                 VerticalAlignment="Bottom"
                                 Click="AddPhantomsToWave_Click"
@@ -242,6 +256,16 @@
                                       HorizontalAlignment="Stretch"
                                       SelectionChanged="ArenaCombo_SelectionChanged"
                                       DisplayMemberPath="Label" />
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Content="Refresh Arenas" FontSize="11" Click="RefreshArenas_Click" />
+                                <TextBlock Grid.Column="1" x:Name="ArenaStatusText" FontSize="11" Opacity="0.65"
+                                           VerticalAlignment="Center" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                            </Grid>
                             <CheckBox x:Name="ClearArenaCheck"
                                       Content="Start empty (clear stragglers)"
                                       IsChecked="True" />

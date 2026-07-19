@@ -432,6 +432,40 @@ public sealed class ServerApiClient : IDisposable
             speedMult,
         }, ct);
 
+    public Task<GodModeStatusResponse?> GetGodModeStatusAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<GodModeStatusResponse>($"webapi/playeradmin/godmode/status?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
+    // ---- Live Tuning Events ----
+    public Task<LiveTuningEventsResponse?> GetLiveTuningEventsAsync(CancellationToken ct = default)
+        => GetJsonAsync<LiveTuningEventsResponse>("webapi/livetuning/events", ct);
+
+    public Task<PhantomOpResponse?> PostLiveTuningActivateAsync(string eventName, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/livetuning/events/activate", new { eventName }, ct);
+
+    public Task<PhantomOpResponse?> PostLiveTuningClearAsync(CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/livetuning/events/clear", new { }, ct);
+
+    // ---- Prototype Field Editor (runtime, MetaGame/MetaState) ----
+    public Task<ProtoEditorDiscoverResponse?> GetProtoEditorDiscoverAsync(string baseType, string query, CancellationToken ct = default)
+        => GetJsonAsync<ProtoEditorDiscoverResponse>(
+            $"webapi/protoeditor/discover?baseType={Uri.EscapeDataString(baseType)}&q={Uri.EscapeDataString(query ?? "")}", ct);
+
+    public Task<ProtoEditorFieldsResponse?> GetProtoEditorFieldsAsync(string protoRef, CancellationToken ct = default)
+        => GetJsonAsync<ProtoEditorFieldsResponse>($"webapi/protoeditor/fields?protoRef={Uri.EscapeDataString(protoRef)}", ct);
+
+    public Task<ProtoEditorWriteResponse?> PostProtoEditorWriteAsync(string protoRef, string path, string valueType, object value, CancellationToken ct = default)
+        => PostJsonAsync<ProtoEditorWriteResponse>("webapi/protoeditor/write", new { protoRef, path, valueType, value }, ct);
+
+    public Task<ProtoEditorCloneResponse?> PostProtoEditorCloneAsync(string sourceProtoRef, string targetProtoRef, string path, string? targetPath, CancellationToken ct = default)
+        => PostJsonAsync<ProtoEditorCloneResponse>("webapi/protoeditor/clone", new { sourceProtoRef, targetProtoRef, path, targetPath }, ct);
+
+    // ---- Currency Editor ----
+    public Task<CurrencyListResponse?> GetCurrencyListAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<CurrencyListResponse>($"webapi/currency/list?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
+    public Task<CurrencySetResponse?> PostCurrencySetAsync(string playerName, string currencyProtoRef, long amount, CancellationToken ct = default)
+        => PostJsonAsync<CurrencySetResponse>("webapi/currency/set", new { playerName, currencyProtoRef, amount }, ct);
+
     // ---- DPS Meter ----
     public Task<DpsResponse?> GetDpsAsync(string player, CancellationToken ct = default)
         => GetJsonAsync<DpsResponse>($"webapi/dps?player={Uri.EscapeDataString(player ?? "*")}", ct);
@@ -781,6 +815,88 @@ public sealed class GodModeResponse
     public GodModeSnapshot? Snapshot { get; set; }
 }
 
+public sealed class LiveTuningEventsResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public List<string> KnownEvents { get; set; } = new();
+    public List<string> ActiveToday { get; set; } = new();
+    public bool OverrideActive { get; set; }
+    public string? OverrideEventName { get; set; }
+}
+
+public sealed class ProtoEditorDiscoverResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public bool Truncated { get; set; }
+    public List<ProtoEditorDiscoverEntry> Results { get; set; } = new();
+}
+
+public sealed class ProtoEditorDiscoverEntry
+{
+    public string ProtoRef { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Path { get; set; } = "";
+    public string ConcreteTypeName { get; set; } = "";
+}
+
+public sealed class ProtoEditorFieldsResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Name { get; set; }
+    public List<FieldSnapshotDto> Fields { get; set; } = new();
+}
+
+public sealed class FieldSnapshotDto
+{
+    public string FieldName { get; set; } = "";
+    public string FieldTypeName { get; set; } = "";
+    public bool IsArray { get; set; }
+    public bool IsEditable { get; set; }
+    public JsonElement Value { get; set; }
+}
+
+public sealed class ProtoEditorWriteResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? PreviousValue { get; set; }
+    public string? NewValue { get; set; }
+}
+
+public sealed class ProtoEditorCloneResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? PreviousValue { get; set; }
+}
+
+public sealed class CurrencyListResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Player { get; set; }
+    public List<CurrencyEntry> Currencies { get; set; } = new();
+}
+
+public sealed class CurrencyEntry
+{
+    public string ProtoRef { get; set; } = "";
+    public string Name { get; set; } = "";
+    public long Amount { get; set; }
+    public int MaxAmount { get; set; }
+}
+
+public sealed class CurrencySetResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public long PreviousAmount { get; set; }
+    public long NewAmount { get; set; }
+}
+
 public sealed class GodModeSnapshot
 {
     public bool Invulnerable { get; set; }
@@ -788,6 +904,15 @@ public sealed class GodModeSnapshot
     public bool NoCooldowns { get; set; }
     public float DamageMult { get; set; } = 1.0f;
     public float SpeedMult { get; set; } = 1.0f;
+}
+
+public sealed class GodModeStatusResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Player { get; set; }
+    public bool Active { get; set; }
+    public GodModeSnapshot? Snapshot { get; set; }
 }
 
 public sealed class RegionListResponse

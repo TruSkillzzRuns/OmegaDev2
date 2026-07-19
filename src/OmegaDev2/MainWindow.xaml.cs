@@ -16,6 +16,7 @@ public sealed partial class MainWindow : Window
 
     private readonly ServerApiClient _pingClient = new();
     private readonly DispatcherQueueTimer _pingTimer;
+    private readonly DispatcherQueueTimer _godModeTimer;
 
     public MainWindow()
     {
@@ -43,6 +44,16 @@ public sealed partial class MainWindow : Window
         _ = PingAsync(); // kick off immediately, don't wait 3s
 
         _ = WarnIfLastUpdateFailedAsync();
+
+        // God Mode has no auto-expiration (a real Property write, not a
+        // timed Condition) — a toggle left on from an earlier session
+        // silently persists across zone changes/logout. Poll and show a
+        // persistent pill instead of leaving that invisible.
+        _godModeTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+        _godModeTimer.Interval = TimeSpan.FromSeconds(15);
+        _godModeTimer.Tick += async (_, _) => await CheckGodModeStatusAsync();
+        _godModeTimer.Start();
+        _ = CheckGodModeStatusAsync();
     }
 
     // Surfaces a warning once if the self-updater's robocopy step left a
@@ -90,6 +101,19 @@ public sealed partial class MainWindow : Window
         ServerStatusText.Text = ok ? "server: online" : "server: offline";
     }
 
+    private async System.Threading.Tasks.Task CheckGodModeStatusAsync()
+    {
+        try
+        {
+            _pingClient.BaseUrl = AppState.ServerUrl;
+            var resp = await _pingClient.GetGodModeStatusAsync("*");
+            GodModeBanner.Visibility = resp?.Ok == true && resp.Active
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+        catch { GodModeBanner.Visibility = Visibility.Collapsed; }
+    }
+
     private void Nav_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         if (args.SelectedItem is not NavigationViewItem item) return;
@@ -104,7 +128,10 @@ public sealed partial class MainWindow : Window
             "enemyphantoms" => typeof(EnemyPhantomsPage),
             "wavedirector"  => typeof(WaveDirectorPage),
             "godmode"       => typeof(GodModePage),
+            "liveevents"    => typeof(EventsLiveTuningPage),
+            "regionevents"  => typeof(MetaGameEditorPage),
             "stashmanager"  => typeof(StashManagerPage),
+            "currencyeditor" => typeof(CurrencyEditorPage),
             "accounts"      => typeof(AccountManagerPage),
             "console"       => typeof(ConsolePage),
             "logviewer"     => typeof(LogViewerPage),
