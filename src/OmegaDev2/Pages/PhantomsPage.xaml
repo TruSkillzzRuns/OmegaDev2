@@ -1,4 +1,4 @@
-<Page
+﻿<Page
     x:Class="OmegaDev2.Pages.PhantomsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -305,7 +305,20 @@
                                                                 VerticalAlignment="Bottom"
                                                                 Tag="{x:Bind SlotId}"
                                                                 Click="OpenRotation_Click"
-                                                                ToolTipService.ToolTip="Pick a preferred power for this hero (applies to every phantom of this hero, not just this squad)" />
+                                                                ToolTipService.ToolTip="Pick a preferred power and combat range for this hero (applies to every phantom of this hero, not just this squad)" />
+                                                        <!-- Combat range badge: hidden while the hero is on Auto (the
+                                                             default), so only a deliberate Melee/Ranged choice shows. -->
+                                                        <Border Background="{ThemeResource OmegaDev2.TeamUpBadgeBackgroundBrush}"
+                                                                CornerRadius="3"
+                                                                Padding="6,2"
+                                                                VerticalAlignment="Bottom"
+                                                                Visibility="{x:Bind CombatRangeVisibility, Mode=OneWay}"
+                                                                ToolTipService.ToolTip="Combat range preference for this hero">
+                                                            <TextBlock Text="{x:Bind CombatRangeLabel, Mode=OneWay}"
+                                                                       FontSize="10"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{ThemeResource OmegaDev2.TeamUpBadgeForegroundBrush}" />
+                                                        </Border>
                                                     </StackPanel>
                                                 </StackPanel>
                                                 <Button Grid.Column="2"

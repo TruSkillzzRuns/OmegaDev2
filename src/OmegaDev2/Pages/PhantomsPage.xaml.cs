@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -104,6 +104,36 @@ public sealed class LineupSlot : INotifyPropertyChanged
     private int _costumeIndex;
     public int CostumeIndex { get => _costumeIndex; set { if (_costumeIndex != value && value >= 0) { _costumeIndex = value; Raise(); } } }
 
+    // Per-hero combat range preference (0 = Auto, 1 = Melee, 2 = Ranged),
+    // surfaced next to the Rotation button so the choice is visible without
+    // reopening the dialog. Populated when the slot is added and refreshed
+    // whenever the dialog saves.
+    private int _combatRange;
+    public int CombatRange
+    {
+        get => _combatRange;
+        set
+        {
+            if (_combatRange == value) return;
+            _combatRange = value;
+            Raise();
+            Raise(nameof(CombatRangeLabel));
+            Raise(nameof(CombatRangeVisibility));
+        }
+    }
+
+    public string CombatRangeLabel => _combatRange switch
+    {
+        1 => "Melee",
+        2 => "Ranged",
+        _ => "Auto",
+    };
+
+    // Auto is the default, so only show the badge when it's been changed —
+    // otherwise every row carries a meaningless "Auto" tag.
+    public Microsoft.UI.Xaml.Visibility CombatRangeVisibility
+        => _combatRange == 0 ? Microsoft.UI.Xaml.Visibility.Collapsed : Microsoft.UI.Xaml.Visibility.Visible;
+
     public string? SelectedCostumeRef =>
         _costumeIndex > 0 && _costumeIndex - 1 < Costumes.Count ? Costumes[_costumeIndex - 1].ProtoRef : null;
 
@@ -143,6 +173,7 @@ public sealed partial class PhantomsPage : Page
     // Costume pools cache: heroProtoRef → costumes. Shared across slots so
     // adding the same hero twice doesn't refetch.
     private readonly Dictionary<string, List<PhantomCostumeEntry>> _costumeCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _combatRangeCache = new();
 
     private bool _portraitSweepRunning;
     private CancellationTokenSource? _pageCts = new();
@@ -315,6 +346,36 @@ public sealed partial class PhantomsPage : Page
         {
             slot.SetCostumes(new List<PhantomCostumeEntry>(), null);
         }
+
+        await LoadCombatRangeIntoSlotAsync(slot);
+    }
+
+    /// <summary>
+    /// Populates the slot's combat range badge from the server.
+    /// </summary>
+    /// <remarks>
+    /// Called from the shared per-slot init path so every way a slot appears
+    /// (roster click, imported code, loaded squad) shows the badge. Cached per
+    /// hero because the preference is per-hero, not per-slot — two Iron Man
+    /// slots don't need two round trips. Failure is silent: the badge just
+    /// stays on Auto, which is also the server-side default, so a missing
+    /// server can't misreport a hero as configured when it isn't.
+    /// </remarks>
+    private async Task LoadCombatRangeIntoSlotAsync(LineupSlot slot)
+    {
+        try
+        {
+            if (_combatRangeCache.TryGetValue(slot.Hero.ProtoRef, out int cached) == false)
+            {
+                _api.BaseUrl = AppState.ServerUrl;
+                var resp = await _api.GetRotationAsync(TargetPlayer, slot.Hero.ProtoRef);
+                if (resp?.Ok != true) return;
+                cached = resp.CombatRange;
+                _combatRangeCache[slot.Hero.ProtoRef] = cached;
+            }
+            slot.CombatRange = cached;
+        }
+        catch { /* leave the badge on Auto */ }
     }
 
     private void RemoveSlot_Click(object sender, RoutedEventArgs e)
@@ -663,6 +724,74 @@ public sealed partial class PhantomsPage : Page
         string current = loaded.PreferredPower ?? string.Empty;
         var group = "RotSlot_" + slot.SlotId;
 
+        // ---- Combat range (how close this hero fights) ----
+        // The AI normally derives this from the kit: any ready melee power means
+        // "walk all the way in". That's right for bruisers but wrong for ranged
+        // heroes carrying a couple of melee moves — Iron Man has punches at
+        // range 90 alongside UniBeam at 1000, so he ends up brawling. There's no
+        // reliable way to tell those apart from the game data (power counts,
+        // max range and base damage all fail to separate Iron Man from
+        // Colossus), so it's an explicit choice.
+        int chosenRange = loaded.CombatRange;
+        // Keep the lineup badge in sync with what the server actually has,
+        // even if the dialog is cancelled.
+        slot.CombatRange = loaded.CombatRange;
+        _combatRangeCache[slot.Hero.ProtoRef] = loaded.CombatRange;
+        var rangeGroup = "RotRange_" + slot.SlotId;
+
+        body.Children.Add(new TextBlock
+        {
+            Text = "Combat range",
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            FontSize = 13,
+            Margin = new Thickness(0, 4, 0, 0),
+        });
+
+        var rangePanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
+        (string label, int val, string hint)[] rangeOpts =
+        {
+            ("Auto",   0, "derive from the hero's powers (default)"),
+            ("Melee",  1, "always close to melee range"),
+            ("Ranged", 2, "hold weapon range and back off when closed down"),
+        };
+        foreach (var (label, val, hint) in rangeOpts)
+        {
+            var rrb = new RadioButton
+            {
+                Content = label,
+                GroupName = rangeGroup,
+                IsChecked = chosenRange == val,
+                Tag = val,
+            };
+            ToolTipService.SetToolTip(rrb, hint);
+            rrb.Checked += (_, _) => { chosenRange = (int)(rrb.Tag ?? 0); dlg.IsPrimaryButtonEnabled = true; };
+            rangePanel.Children.Add(rrb);
+        }
+        body.Children.Add(rangePanel);
+
+        body.Children.Add(new TextBlock
+        {
+            Text = "Ranged also enables kiting — the hero backs away when something closes on it.",
+            TextWrapping = TextWrapping.Wrap,
+            Opacity = 0.55,
+            FontSize = 11,
+        });
+
+        body.Children.Add(new Border
+        {
+            Height = 1,
+            Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Gray),
+            Opacity = 0.2,
+            Margin = new Thickness(0, 8, 0, 4),
+        });
+
+        body.Children.Add(new TextBlock
+        {
+            Text = "Preferred power",
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            FontSize = 13,
+        });
+
         var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 380 };
         var list = new StackPanel { Spacing = 3 };
         scroll.Content = list;
@@ -698,19 +827,40 @@ public sealed partial class PhantomsPage : Page
         noneRadio.Checked += (_, _) => { chosenRef = string.Empty; dlg.IsPrimaryButtonEnabled = true; };
 
         body.Children.Add(scroll);
-        dlg.IsSecondaryButtonEnabled = !string.IsNullOrEmpty(current);
+        dlg.IsSecondaryButtonEnabled = !string.IsNullOrEmpty(current) || loaded.CombatRange != 0;
 
         var result = await dlg.ShowAsync();
         try
         {
             if (result == ContentDialogResult.Primary)
             {
-                var resp = await _api.PostRotationAsync(TargetPlayer, slot.Hero.ProtoRef, string.IsNullOrEmpty(chosenRef) ? null : chosenRef);
+                // One call carries both settings — the endpoint echoes powerRef
+                // back unchanged, so saving a range never clears the skill pick.
+                var resp = await _api.PostCombatRangeAsync(TargetPlayer, slot.Hero.ProtoRef,
+                    string.IsNullOrEmpty(chosenRef) ? null : chosenRef, chosenRange);
+                if (resp?.Ok == true)
+                {
+                    slot.CombatRange = chosenRange;
+                    _combatRangeCache[slot.Hero.ProtoRef] = chosenRange;
+                    // Other slots of the same hero share the preference.
+                    foreach (var other in Lineup)
+                        if (string.Equals(other.Hero.ProtoRef, slot.Hero.ProtoRef, StringComparison.OrdinalIgnoreCase))
+                            other.CombatRange = chosenRange;
+                }
                 SquadStatusText.Text = resp?.Message ?? resp?.Error ?? "no response";
             }
             else if (result == ContentDialogResult.Secondary)
             {
-                var resp = await _api.PostRotationAsync(TargetPlayer, slot.Hero.ProtoRef, null);
+                // "Clear preference" resets both back to default AI behavior.
+                var resp = await _api.PostCombatRangeAsync(TargetPlayer, slot.Hero.ProtoRef, null, 0);
+                if (resp?.Ok == true)
+                {
+                    slot.CombatRange = 0;
+                    _combatRangeCache[slot.Hero.ProtoRef] = 0;
+                    foreach (var other in Lineup)
+                        if (string.Equals(other.Hero.ProtoRef, slot.Hero.ProtoRef, StringComparison.OrdinalIgnoreCase))
+                            other.CombatRange = 0;
+                }
                 SquadStatusText.Text = resp?.Message ?? resp?.Error ?? "preference cleared";
             }
         }

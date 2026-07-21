@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -356,6 +356,14 @@ public sealed class ServerApiClient : IDisposable
     public Task<PhantomOpResponse?> PostRotationAsync(string playerName, string heroRef, string? powerRef, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/rotation", new { playerName, heroRef, powerRef }, ct);
 
+    /// <summary>
+    /// Sets the per-hero combat range preference (0 = Auto, 1 = Melee, 2 = Ranged).
+    /// Sent on the same endpoint as the preferred power; powerRef is echoed back
+    /// unchanged so setting the range never clears an existing skill preference.
+    /// </summary>
+    public Task<PhantomOpResponse?> PostCombatRangeAsync(string playerName, string heroRef, string? powerRef, int combatRange, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/rotation", new { playerName, heroRef, powerRef, combatRange }, ct);
+
     // ---- Nemesis ----
     public Task<NemesisListResponse?> GetNemesisListAsync(string player, CancellationToken ct = default)
         => GetJsonAsync<NemesisListResponse>($"webapi/phantoms/nemesis?player={Uri.EscapeDataString(player ?? "*")}", ct);
@@ -611,6 +619,8 @@ public sealed class RotationResponse
     public string HeroRef { get; set; } = string.Empty;
     public string HeroName { get; set; } = string.Empty;
     public string PreferredPower { get; set; } = string.Empty;
+    /// <summary>0 = Auto (kit-derived), 1 = Melee, 2 = Ranged.</summary>
+    public int CombatRange { get; set; }
     public List<RotationPowerEntry> Powers { get; set; } = new();
 }
 
