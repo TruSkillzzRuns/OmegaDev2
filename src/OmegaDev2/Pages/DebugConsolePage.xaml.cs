@@ -28,6 +28,7 @@ public sealed partial class DebugConsolePage : Page
     // Optional API token from settings — null means no Authorization header.
     // Never hardcode a token here; this file ships in the public repo.
     private static string? BearerToken => Services.SettingsService.Current.BearerToken;
+    private readonly Services.ServerApiClient _api = new();
     // Poll less aggressively in quiet mode — there's nothing changing most of
     // the time, so 1s is plenty. Show-all mode bumps to 250ms for responsiveness.
     private int _pollIntervalMs = 1000;
@@ -319,6 +320,52 @@ public sealed partial class DebugConsolePage : Page
         var dp = new DataPackage(); dp.SetText(sb.ToString()); Clipboard.SetContent(dp);
         SetStatus($"Copied {_visible.Count} lines.");
     }
+
+    private async void PowerAudit_Click(object sender, RoutedEventArgs e)
+    {
+        PowerAuditButton.IsEnabled = false;
+        SetStatus("Running power audit — scanning every hero and team-up's kit…");
+        try
+        {
+            _api.BaseUrl = ServerBaseUrl;
+            var resp = await _api.GetPowerAuditAsync();
+            SetStatus(resp?.Ok == true
+                ? $"{resp.Message} If you're in Quiet mode, toggle 'Show all' to see the [PowerAudit] lines."
+                : resp?.Error ?? "power audit failed — no response");
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"power audit error: {ex.Message}");
+        }
+        finally
+        {
+            PowerAuditButton.IsEnabled = true;
+        }
+    }
+
+    private async void PowerDamageAudit_Click(object sender, RoutedEventArgs e)
+    {
+        PowerDamageAuditButton.IsEnabled = false;
+        string playerName = DamageAuditPlayerBox.Text?.Trim();
+        SetStatus("Running full damage audit — this will briefly spawn/despawn ~260 test phantoms near the target player…");
+        try
+        {
+            _api.BaseUrl = ServerBaseUrl;
+            var resp = await _api.GetPowerDamageAuditAsync(string.IsNullOrWhiteSpace(playerName) ? "*" : playerName);
+            SetStatus(resp?.Ok == true
+                ? $"{resp.Message} If you're in Quiet mode, toggle 'Show all' to see the [PowerDamageAudit] lines."
+                : resp?.Error ?? "damage audit failed — no response");
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"damage audit error: {ex.Message}");
+        }
+        finally
+        {
+            PowerDamageAuditButton.IsEnabled = true;
+        }
+    }
+
     private void LevelFilter_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (LevelFilter.SelectedItem is ComboBoxItem ci && ci.Content is string s) _minLevel = s;

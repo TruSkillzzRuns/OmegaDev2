@@ -368,6 +368,29 @@ public sealed class ServerApiClient : IDisposable
     public Task<NemesisListResponse?> GetNemesisListAsync(string player, CancellationToken ct = default)
         => GetJsonAsync<NemesisListResponse>($"webapi/phantoms/nemesis?player={Uri.EscapeDataString(player ?? "*")}", ct);
 
+    /// <summary>
+    /// Scans every playable hero and team-up's power kit for Ultimate powers
+    /// and percent-target-health execute powers — the two categories that can
+    /// one-shot a friendly phantom no matter how much HP it has. Fully
+    /// offline (reads prototype data only, spawns nothing, no login/player
+    /// required); full per-power detail goes to the server log under
+    /// "[PowerAudit]", this just returns the headline counts.
+    /// </summary>
+    public Task<PowerAuditResponse?> GetPowerAuditAsync(CancellationToken ct = default)
+        => GetJsonAsync<PowerAuditResponse>("webapi/phantoms/poweraudit", ct);
+
+    /// <summary>
+    /// The comprehensive follow-up: measures REAL estimated damage for
+    /// EVERY enemy-usable power on every hero/team-up (not just Ultimates/
+    /// %-health executes), by briefly spawning a real phantom per hero/rank
+    /// and reading its live gear-driven stats. Requires the target player to
+    /// have an in-world avatar (spawns test phantoms near them) — causes a
+    /// rapid, harmless spawn/despawn flicker while it runs. Full results go
+    /// to the server log under "[PowerDamageAudit]".
+    /// </summary>
+    public Task<PowerDamageAuditResponse?> GetPowerDamageAuditAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<PowerDamageAuditResponse>($"webapi/phantoms/poweraudit/damage?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
     public Task<PhantomOpResponse?> PostNemesisBanishAsync(string playerName, string heroRef, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/nemesis", new { playerName, action = "banish", heroRef }, ct);
 
@@ -568,6 +591,9 @@ public sealed class PhantomInfoEntry
     public bool LockLevel { get; set; }
     public string? CostumeRef { get; set; }
     public bool InWorld { get; set; }
+    /// <summary>Null when the entity can't be resolved right now (despawned/never spawned this session).</summary>
+    public int? HealthPct { get; set; }
+    public bool IsDead { get; set; }
 }
 
 public sealed class PhantomSquadsResponse
@@ -815,6 +841,26 @@ public sealed class PhantomOpResponse
     public string? Error { get; set; }
     public string? Message { get; set; }
     public int Removed { get; set; }
+}
+
+public sealed class PowerAuditResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Message { get; set; }
+    public int HeroesScanned { get; set; }
+    public int PowersScanned { get; set; }
+    public int DangerousCount { get; set; }
+}
+
+public sealed class PowerDamageAuditResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public string? Message { get; set; }
+    public int SpawnAttempts { get; set; }
+    public int SpawnFailures { get; set; }
+    public int PowersMeasured { get; set; }
 }
 
 public sealed class GodModeResponse

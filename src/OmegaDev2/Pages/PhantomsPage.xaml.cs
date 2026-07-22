@@ -50,9 +50,17 @@ public sealed class ActivePhantomRow
     public PhantomInfoEntry Entry { get; }
     public string Username => Entry.Username ?? "";
     public string Title => $"{Entry.HeroName}  ({Entry.Username})";
+
+    // HP suffix: "downed" beats a raw "0% HP" (both true when Entry.IsDead),
+    // and is omitted entirely when the entity can't be resolved right now
+    // (HealthPct == null) rather than showing a misleading "0%".
+    private string HpSuffix => Entry.IsDead
+        ? " · downed"
+        : Entry.HealthPct.HasValue ? $" · {Entry.HealthPct}% HP" : "";
+
     public string Detail => Entry.LockLevel
-        ? $"level {Entry.Level} (locked){(Entry.InWorld ? "" : " · not in world")}"
-        : $"level {Entry.Level} (auto){(Entry.InWorld ? "" : " · not in world")}";
+        ? $"level {Entry.Level} (locked){(Entry.InWorld ? "" : " · not in world")}{HpSuffix}"
+        : $"level {Entry.Level} (auto){(Entry.InWorld ? "" : " · not in world")}{HpSuffix}";
     public ActivePhantomRow(PhantomInfoEntry entry) => Entry = entry;
 }
 

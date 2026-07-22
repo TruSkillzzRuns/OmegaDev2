@@ -111,6 +111,23 @@
                             <TextBlock Text="Copy" />
                         </StackPanel>
                     </Button>
+                    <Button x:Name="PowerAuditButton" Click="PowerAudit_Click" Padding="14,7" MinHeight="34"
+                            ToolTipService.ToolTip="Quick structural scan: flags every Ultimate and %-health-execute power across the whole roster. Read-only, spawns nothing — but does NOT cover plain high-damage powers. Full detail lands in this log under [PowerAudit].">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE9D9;" FontSize="13" />
+                            <TextBlock Text="Run Power Audit" />
+                        </StackPanel>
+                    </Button>
+                    <TextBox x:Name="DamageAuditPlayerBox" Width="120" FontSize="12" VerticalAlignment="Center"
+                             PlaceholderText="player (blank=any)"
+                             ToolTipService.ToolTip="Which logged-in player to spawn test phantoms near. Leave blank to use whichever player is connected." />
+                    <Button x:Name="PowerDamageAuditButton" Click="PowerDamageAudit_Click" Padding="14,7" MinHeight="34"
+                            ToolTipService.ToolTip="Comprehensive: measures REAL estimated damage for EVERY enemy-usable power on every hero/team-up, not just Ultimates. Briefly spawns ~260 real test phantoms near the target player (rapid flicker, no loot/XP/nemesis-roster side effects) to read live gear-driven stats. Requires that player to be in-world. Full results + worst-40 ranking land in this log under [PowerDamageAudit].">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE945;" FontSize="13" />
+                            <TextBlock Text="Run Full Damage Audit" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
