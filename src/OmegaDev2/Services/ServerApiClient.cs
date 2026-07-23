@@ -427,6 +427,15 @@ public sealed class ServerApiClient : IDisposable
     public Task<WavePlansResponse?> PostWavePlanOpAsync(string playerName, string op, string name, CancellationToken ct = default)
         => PostJsonAsync<WavePlansResponse>("webapi/arena/waves/plans", new { playerName, op, name }, ct);
 
+    public Task<PhantomOpResponse?> PostEndlessStartAsync(object body, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/arena/endless/start", body, ct);
+
+    public Task<PhantomOpResponse?> PostEndlessExtractAsync(string playerName, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/arena/endless/extract", new { playerName }, ct);
+
+    public Task<EndlessStatusResponse?> GetEndlessStatusAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<EndlessStatusResponse>($"webapi/arena/endless/status?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
     // ---- Stash Manager ----
     public Task<InventoryResponse?> GetInventoryAsync(string player, CancellationToken ct = default)
         => GetJsonAsync<InventoryResponse>($"webapi/inventory?player={Uri.EscapeDataString(player ?? "*")}", ct);
@@ -707,6 +716,26 @@ public sealed class WaveStatusEntry
     public long IntermissionRemainingMs { get; set; }
     public bool Paused { get; set; }
     public bool Loop { get; set; }
+}
+
+public sealed class EndlessStatusResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public EndlessStatusEntry? Status { get; set; }
+}
+
+public sealed class EndlessStatusEntry
+{
+    public bool Active { get; set; }
+    public string State { get; set; } = "";
+    public int WavesSurvived { get; set; }
+    public int Kills { get; set; }
+    public int Alive { get; set; }
+    public int PeakRank { get; set; }
+    public long RunSeconds { get; set; }
+    public long IntermissionRemainingMs { get; set; }
+    public bool Paused { get; set; }
 }
 
 public sealed class WaveHistoryEntry

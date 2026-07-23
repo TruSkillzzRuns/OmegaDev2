@@ -112,7 +112,44 @@ public sealed partial class WaveDirectorPage : Page
     // (bosses, spawn markers, transition consoles), leaving a clean stage.
     private static readonly string[] s_arenaPathMatches =
     {
+        // Original 5.
         "CH0207", "CH0803", "CH0809", "CH0906", "MrSinisterBase",
+        // NOTE: XDefense, HoloSim, UltronRaid, SurturRaid, AxisRaid were
+        // tried and removed (2026-07-23) — confirmed live these all go
+        // through the game's matchmaking/party-invite flow (accept an
+        // invite to warp) instead of a direct instance warp, so landing in
+        // one starts the region's OWN native encounter (e.g. a normal
+        // Holo-Sim run), not an empty stage for our waves.
+        // Other isolated single-encounter boss-room instances.
+        "CH0206", "CH0409", "CH0503", "CH0605", "CH0606", "CH0705",
+        "CH0707", "CH0808", "CH0903",
+        // REMOVED (2026-07-23): CosmicGate, DrStrangeTimesSquare, and all
+        // Daily* Terminal remixes (DailyGSinisterLab/Taskmaster/DoomCastle/
+        // AsgardINST/AIMFacility/StrykerBunker) — same DailyQueue/Challenges
+        // RegionQueueMethod flag (Teleporter.cs's IsQueueRegion check) that
+        // broke HoloSim/the raids, so pulled preemptively without waiting to
+        // reconfirm each one live.
+        // Chapter 1-9 single-encounter instances (remake story), same shape
+        // as the confirmed-working originals above.
+        "CH0101HellsKitchen", "CH0102PowerPlant", "CH0103NYPD", "CH0104Subway",
+        "CH0105Nightclub", "CH0106KPWarehouse",
+        "CH0201ShippingYard", "CH0202HoodSightingContainer", "CH0203RhinoBarge",
+        "CH0204Q36AIMLab", "CH0205Construction", "CH0208Cannery", "CH0209HoodsHideout",
+        "CH0302HydraOutpost", "CH0303Watermill", "CH0304PoisonGlade",
+        "CH0305ReconPost", "CH0306PrincessBar", "CH0307HandTower",
+        "CH0403MGHStorage", "CH0404MGHFactory", "CH0405WaxMuseum",
+        "CH0406Subway", "CH0407NYPDRooftop", "CH0408MaggiaRestaurant", "CH0410FiskTower",
+        "CH0502MutantWarehouse", "CH0504PurifierChurch",
+        "CH0602DeepCavern", "CH0603CircusSideshow", "CH0604AIMWeaponsLab",
+        "CH0702SauronCaves", "CH0703BroodCaves", "CH0706MutateCaves",
+        "CH0801AIMWeaponFacility", "CH0802HYDRAIsland",
+        "CH0902NorwayDarkForest", "CH0905Canal",
+        // Original (pre-remake) Story single instances, same category as
+        // the confirmed-working MrSinisterBase.
+        "HellsKitchen01Region", "NightclubRegion", "BrooklynRegion",
+        "HellsKitchen02RedlightRegion", "UpperEastSideRegion", "FiskTowerRegion",
+        // One-Shot Stories — single-encounter instances, not queued content.
+        "WakandaP1RegionL60",
     };
 
     private sealed class ArenaOption

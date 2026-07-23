@@ -20,7 +20,11 @@
 
                 <!-- DARK (Default, matches OS dark mode) -->
                 <ResourceDictionary x:Key="Default">
-                    <Color x:Key="OmegaDev2.PageBackgroundColor">#FF121418</Color>
+                    <!-- Partially transparent (not FF) so MainWindow's
+                         MatrixRainBackground (sitting behind NavigationView)
+                         shows through — every page's own root uses this same
+                         brush for its background. Panels stay fully opaque. -->
+                    <Color x:Key="OmegaDev2.PageBackgroundColor">#A8121418</Color>
                     <Color x:Key="OmegaDev2.PanelBackgroundColor">#FF1B1F24</Color>
                     <Color x:Key="OmegaDev2.PanelSecondaryColor">#FF232933</Color>
                     <Color x:Key="OmegaDev2.PanelBorderColor">#FF2F3846</Color>
@@ -99,6 +103,12 @@
             <!-- NavigationView pane matches the panel color so header/menu blend. -->
             <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{ThemeResource OmegaDev2.PanelBackgroundColor}" />
             <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground"  Color="{ThemeResource OmegaDev2.PanelBackgroundColor}" />
+
+            <!-- NavigationView's control template paints its own ContentGrid
+                 background via this key (default: an opaque system brush),
+                 independent of the Background property — override it so the
+                 rain shows through the content area too. -->
+            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
 
             <Style TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{ThemeResource OmegaDev2.TextPrimaryBrush}" />

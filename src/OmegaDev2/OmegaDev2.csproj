@@ -5,8 +5,8 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>OmegaDev2</RootNamespace>
     <AssemblyName>OmegaDev2</AssemblyName>
-    <AssemblyVersion>0.3.12</AssemblyVersion>
-    <FileVersion>0.3.12</FileVersion>
+    <AssemblyVersion>0.3.13</AssemblyVersion>
+    <FileVersion>0.3.13</FileVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\OmegaDev2.ico</ApplicationIcon>
     <UseWinUI>true</UseWinUI>
@@ -34,17 +34,13 @@
     <ItemGroup>
       <!-- Match language folders: 2-3 lowercase letters, optional subtags,
            ending in a language-region pair. Exclude any en-* variant. -->
-      <_LocaleDirs
-        Include="@(_Empty)"
-        Condition="false" />
+      <_LocaleDirs Include="@(_Empty)" Condition="false" />
       <_AllDirs Include="$([System.IO.Directory]::GetDirectories('$(TargetDir)'))" />
     </ItemGroup>
     <ItemGroup>
-      <_LangDirs
-        Include="@(_AllDirs)"
-        Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(Filename)', '^[a-z]{2,3}(-[A-Za-z0-9]+)+$')) And !$([System.String]::Copy('%(Filename)').StartsWith('en'))" />
+      <_LangDirs Include="@(_AllDirs)" Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(Filename)', '^[a-z]{2,3}(-[A-Za-z0-9]+)+$')) And !$([System.String]::Copy('%(Filename)').StartsWith('en'))" />
     </ItemGroup>
-    <Message Text="Stripping @(_LangDirs->Count()) non-English locale folders" Importance="high" />
+    <Message Text="Stripping @(_LangDirs-&gt;Count()) non-English locale folders" Importance="high" />
     <RemoveDir Directories="@(_LangDirs)" />
   </Target>
 
@@ -55,6 +51,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.2.0" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.250907003" />
   </ItemGroup>
 </Project>

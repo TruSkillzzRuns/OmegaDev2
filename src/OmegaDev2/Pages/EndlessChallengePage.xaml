@@ -1,0 +1,274 @@
+<Page
+    x:Class="OmegaDev2.Pages.EndlessChallengePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:OmegaDev2.Pages"
+    Background="{ThemeResource OmegaDev2.PageBackgroundBrush}"
+    NavigationCacheMode="Enabled">
+
+    <Grid Padding="24,20,24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,14">
+            <TextBlock Text="Endless Challenge"
+                       FontSize="32"
+                       FontWeight="SemiBold"
+                       Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+            <TextBlock Text="Rogue-lite horde mode: one enemy repeats forever, nemesis rank climbs every 3 waves cleared. Ends on death (wipe) or Extract (bank the score). A reward chest spawns every 5th wave — every 20th is a loot-splosion with a shot at the top rarity tiers."
+                       FontSize="13"
+                       TextWrapping="Wrap"
+                       MaxWidth="920"
+                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+        </StackPanel>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="1"
+                Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                CornerRadius="6"
+                Padding="14,10"
+                Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button x:Name="LoadBtn" Content="Load Enemies" Click="LoadEnemies_Click" />
+                <TextBox x:Name="SearchBox"
+                         Width="240"
+                         PlaceholderText="search enemy... (only used for 'Regular enemy' source)"
+                         TextChanged="SearchBox_TextChanged"
+                         VerticalAlignment="Center" />
+                <TextBox x:Name="PlayerBox"
+                         Width="200"
+                         PlaceholderText="player (* = first online)"
+                         Text="*"
+                         VerticalAlignment="Center" />
+                <TextBlock x:Name="StatusText"
+                           VerticalAlignment="Center"
+                           Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Main: enemy catalog | run settings | live status -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="340" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Enemy catalog (only relevant for the "Regular enemy" source) -->
+            <Border Grid.Column="0"
+                    Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                    CornerRadius="6"
+                    Padding="6"
+                    Margin="0,0,12,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Spacing="2" Margin="8,6,8,6">
+                        <TextBlock Text="ENEMY CATALOG"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   CharacterSpacing="180"
+                                   Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                        <TextBlock x:Name="CatalogHint"
+                                   Text="select an enemy for the 'Regular enemy' source"
+                                   FontSize="10"
+                                   Opacity="0.55"
+                                   Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                    </StackPanel>
+                    <ListView x:Name="EnemyCatalogList" Grid.Row="1">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:WaveEnemyCard">
+                                <StackPanel Spacing="1" Margin="0,2">
+                                    <TextBlock Text="{x:Bind Name}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{x:Bind SubLabel}" FontSize="10" Opacity="0.55" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+            </Border>
+
+            <!-- Run settings -->
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Margin="0,0,12,0">
+                <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                        CornerRadius="6"
+                        Padding="14">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Enemy source"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                        <ComboBox x:Name="EndlessSourceCombo"
+                                  Header="Source"
+                                  HorizontalAlignment="Stretch"
+                                  SelectedIndex="0">
+                            <ComboBoxItem Content="Enemy Phantom (hero picker below)" />
+                            <ComboBoxItem Content="Regular enemy (selected in catalog)" />
+                        </ComboBox>
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="PhantomHeroCombo"
+                                      Grid.Column="0"
+                                      Header="Enemy phantom hero"
+                                      HorizontalAlignment="Stretch"
+                                      DisplayMemberPath="Label" />
+                            <NumberBox x:Name="PhantomLevelBox"
+                                       Grid.Column="1"
+                                       Header="Level (0 = match)" Value="0" Minimum="0" Maximum="60"
+                                       SpinButtonPlacementMode="Compact" Width="150" />
+                        </Grid>
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <NumberBox x:Name="EndlessCountBox"
+                                       Grid.Column="0"
+                                       Header="Count per wave"
+                                       Value="5" Minimum="1" Maximum="30"
+                                       SpinButtonPlacementMode="Compact" />
+                            <NumberBox x:Name="EndlessStartRankBox"
+                                       Grid.Column="1"
+                                       Header="Starting nemesis rank (phantom only, 0 = off)"
+                                       Value="1" Minimum="0" Maximum="5"
+                                       SpinButtonPlacementMode="Compact"
+                                       ToolTipService.ToolTip="Climbs by 1 every 3 waves cleared, capped at 5" />
+                        </Grid>
+
+                        <Border BorderBrush="{ThemeResource OmegaDev2.TextSecondaryBrush}" BorderThickness="0,1,0,0" Opacity="0.25" Margin="0,4" />
+
+                        <TextBlock Text="Arena"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                        <ComboBox x:Name="ArenaCombo"
+                                  Header="Arena (optional — warp here first)"
+                                  PlaceholderText="spawn where you stand"
+                                  HorizontalAlignment="Stretch"
+                                  SelectionChanged="ArenaCombo_SelectionChanged"
+                                  DisplayMemberPath="Label" />
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="Refresh Arenas" FontSize="11" Click="RefreshArenas_Click" />
+                            <TextBlock Grid.Column="1" x:Name="ArenaStatusText" FontSize="11" Opacity="0.65"
+                                       VerticalAlignment="Center" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                        </Grid>
+                        <CheckBox x:Name="ClearArenaCheck"
+                                  Content="Start empty (clear stragglers)"
+                                  IsChecked="True" />
+
+                        <Border BorderBrush="{ThemeResource OmegaDev2.TextSecondaryBrush}" BorderThickness="0,1,0,0" Opacity="0.25" Margin="0,4" />
+
+                        <TextBlock Text="Scaling &amp; reward"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                        <NumberBox x:Name="CountScaleBox"
+                                   Header="Enemy count scale per wave (%)"
+                                   Value="0" Minimum="0" Maximum="100"
+                                   SpinButtonPlacementMode="Compact"
+                                   ToolTipService.ToolTip="Each wave's enemy count grows by this percent, compounding per wave" />
+                        <NumberBox x:Name="LevelBumpBox"
+                                   Header="Phantom level bump per wave"
+                                   Value="0" Minimum="0" Maximum="10"
+                                   SpinButtonPlacementMode="Compact"
+                                   ToolTipService.ToolTip="Only applies to enemy phantoms with an explicit level (not 'match player')" />
+                        <TextBox x:Name="RewardLootTableRefText"
+                                 Header="Chest reward loot table ref"
+                                 PlaceholderText="e.g. Loot/Tables/SomeTable.prototype"
+                                 ToolTipService.ToolTip="Rolled multiple times per chest (more rolls at higher waves); rarity floor climbs with wave count; every 20th wave is a loot-splosion." />
+                    </StackPanel>
+                </Border>
+            </ScrollViewer>
+
+            <!-- Run control + live status -->
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="12">
+                    <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Run"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                            <Button x:Name="StartEndlessBtn"
+                                    Content="Start Endless Challenge"
+                                    Style="{ThemeResource AccentButtonStyle}"
+                                    HorizontalAlignment="Stretch"
+                                    Click="StartEndless_Click" />
+                            <Button x:Name="ExtractEndlessBtn"
+                                    Content="Extract (bank score)"
+                                    HorizontalAlignment="Stretch"
+                                    Click="ExtractEndless_Click" />
+                            <TextBlock x:Name="RunStatusText"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                            <InfoBar x:Name="CompletionInfoBar"
+                                     Title="Endless Challenge ended"
+                                     Severity="Success"
+                                     IsClosable="True"
+                                     IsOpen="False" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="LIVE"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       CharacterSpacing="180"
+                                       Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                            <TextBlock x:Name="LiveStateText" Text="not running" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock x:Name="LiveWavesText" Text="0" FontSize="22" FontWeight="SemiBold" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                                    <TextBlock Text="WAVES SURVIVED" FontSize="10" CharacterSpacing="140" Opacity="0.6" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock x:Name="LiveRankText" Text="0" FontSize="22" FontWeight="SemiBold" Foreground="{ThemeResource OmegaDev2.DangerEmphasisBrush}" />
+                                    <TextBlock Text="PEAK RANK" FontSize="10" CharacterSpacing="140" Opacity="0.6" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock x:Name="LiveAliveText" Text="0" FontSize="18" FontWeight="SemiBold" />
+                                    <TextBlock Text="ALIVE" FontSize="10" CharacterSpacing="140" Opacity="0.6" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock x:Name="LiveKillsText" Text="0" FontSize="18" FontWeight="SemiBold" />
+                                    <TextBlock Text="KILLS" FontSize="10" CharacterSpacing="140" Opacity="0.6" />
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock x:Name="LiveTimerText" Text="" FontSize="12" Opacity="0.75" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Page>
