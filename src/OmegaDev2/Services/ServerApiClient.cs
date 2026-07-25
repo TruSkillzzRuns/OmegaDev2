@@ -531,6 +531,18 @@ public sealed class ServerApiClient : IDisposable
     public Task<PhantomOpResponse?> PostLeaderboardClearAsync(string playerName, string? kind = null, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/leaderboard/clear", new { playerName, kind }, ct);
 
+    // Cross-account "everyone's Trial of the Impossible runs" board — unlike
+    // GetLeaderboardAsync (scoped to one logged-in player), this has no
+    // player param at all; the server scans every registered account.
+    public Task<TrialGlobalLeaderboardResponse?> GetTrialGlobalLeaderboardAsync(CancellationToken ct = default)
+        => GetJsonAsync<TrialGlobalLeaderboardResponse>("webapi/leaderboard/trial-global", ct);
+
+    public Task<PhantomOpResponse?> PostTrialGlobalDeleteAsync(string targetPlayerName, string id, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/leaderboard/trial-global/delete", new { targetPlayerName, id }, ct);
+
+    public Task<PhantomOpResponse?> PostTrialGlobalClearAsync(CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/leaderboard/trial-global/clear", new { }, ct);
+
     // ---- Command Console ----
     public Task<ConsoleExecResponse?> PostConsoleExecAsync(string command, string? playerName, CancellationToken ct = default)
         => PostJsonAsync<ConsoleExecResponse>("webapi/console/exec", new { command, playerName }, ct);
@@ -836,6 +848,32 @@ public sealed class LeaderboardEntry
     public long TimestampMs { get; set; }
     public bool Completed { get; set; } = true;
     public bool IsPersonalBest { get; set; }
+}
+
+public sealed class TrialGlobalLeaderboardResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public System.Collections.Generic.List<TrialGlobalLeaderboardEntry> Entries { get; set; } = new();
+}
+
+public sealed class TrialGlobalLeaderboardEntry
+{
+    public int Rank { get; set; }
+    public string Id { get; set; } = "";
+    public string PlayerName { get; set; } = "";
+    public string HeroName { get; set; } = "";
+    public string? HeroPortraitPath { get; set; }
+    public System.Collections.Generic.List<string>? HeroPortraitCandidates { get; set; }
+    public int NemesisKills { get; set; }
+    public int Deaths { get; set; }
+    public bool Completed { get; set; }
+    // Only meaningful when Completed is false — "Defeated" (hit the 3-death
+    // limit, sent back to Avengers Tower) vs "Aborted" (left the arena alive
+    // — warped/quit — before that happened).
+    public string? FailReason { get; set; }
+    public long ElapsedMs { get; set; }
+    public long TimestampMs { get; set; }
 }
 
 public sealed class ConsoleExecResponse

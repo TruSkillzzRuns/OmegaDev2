@@ -125,6 +125,7 @@ public sealed partial class MainWindow : Window
             "phantoms"      => typeof(PhantomsPage),
             "dpsmeter"      => typeof(DpsMeterPage),
             "leaderboard"   => typeof(LeaderboardPage),
+            "trialleaderboard" => typeof(TrialLeaderboardPage),
             "enemyphantoms" => typeof(EnemyPhantomsPage),
             "wavedirector"  => typeof(WaveDirectorPage),
             "endlesschallenge" => typeof(EndlessChallengePage),

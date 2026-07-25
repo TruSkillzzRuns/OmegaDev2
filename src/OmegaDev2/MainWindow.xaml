@@ -93,6 +93,11 @@
                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE9F9;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem Content="Trial Leaderboard" Tag="trialleaderboard">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE945;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
 
                 <NavigationViewItemHeader Content="COMBAT" />
                 <NavigationViewItem Content="Enemy Phantoms" Tag="enemyphantoms">
