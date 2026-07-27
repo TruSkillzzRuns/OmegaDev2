@@ -230,11 +230,33 @@
                             CornerRadius="6"
                             Padding="12">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="LIVE"
-                                       FontSize="11"
-                                       FontWeight="SemiBold"
-                                       CharacterSpacing="180"
-                                       Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="LIVE"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           CharacterSpacing="180"
+                                           VerticalAlignment="Center"
+                                           Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                                <CheckBox Grid.Column="1"
+                                          x:Name="OverlayClickThroughCheck"
+                                          Content="Click-through"
+                                          FontSize="11"
+                                          VerticalAlignment="Center"
+                                          Checked="OverlayClickThroughCheck_Changed"
+                                          Unchecked="OverlayClickThroughCheck_Changed" />
+                                <Button Grid.Column="2"
+                                        x:Name="ShowOverlayBtn"
+                                        Content="Pop out overlay"
+                                        FontSize="11"
+                                        Padding="8,4,8,4"
+                                        Click="ShowOverlayBtn_Click" />
+                            </Grid>
                             <TextBlock x:Name="LiveStateText" Text="not running" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
                             <Grid Margin="0,4,0,0">
                                 <Grid.ColumnDefinitions>

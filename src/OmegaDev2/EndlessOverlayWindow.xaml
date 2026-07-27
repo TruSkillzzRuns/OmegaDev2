@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="OmegaDev2.EndlessOverlayWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="Endless Wave Overlay"
+    mc:Ignorable="d">
+
+    <Grid Padding="1">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border x:Name="DragHandle"
+                Background="#22FFFFFF"
+                Padding="10,6,6,6"
+                PointerPressed="DragHandle_PointerPressed"
+                PointerMoved="DragHandle_PointerMoved"
+                PointerReleased="DragHandle_PointerReleased">
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Endless Wave"
+                           Foreground="White"
+                           FontWeight="SemiBold"
+                           FontSize="12"
+                           VerticalAlignment="Center" />
+                <Button Grid.Column="1"
+                        Content="x"
+                        Padding="8,2,8,2"
+                        Click="CloseButton_Click" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Padding="12,10,12,12" RowSpacing="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock x:Name="LiveStateText"
+                       Grid.Row="0"
+                       Text="not running"
+                       Foreground="White"
+                       FontSize="15"
+                       FontWeight="SemiBold"
+                       TextWrapping="Wrap" />
+
+            <Grid Grid.Row="1" ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock x:Name="LiveWavesText" Text="0" FontSize="22" FontWeight="SemiBold" Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <TextBlock Text="WAVES SURVIVED" FontSize="9" CharacterSpacing="100" Opacity="0.65" Foreground="White" TextWrapping="Wrap" />
+                </StackPanel>
+                <StackPanel Grid.Column="1">
+                    <TextBlock x:Name="LiveRankText" Text="0" FontSize="22" FontWeight="SemiBold" Foreground="{ThemeResource OmegaDev2.DangerEmphasisBrush}" />
+                    <TextBlock Text="PEAK RANK" FontSize="9" CharacterSpacing="100" Opacity="0.65" Foreground="White" />
+                </StackPanel>
+            </Grid>
+
+            <Grid Grid.Row="2" ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock x:Name="LiveAliveText" Text="0" FontSize="18" FontWeight="SemiBold" Foreground="White" />
+                    <TextBlock Text="ALIVE" FontSize="9" CharacterSpacing="100" Opacity="0.65" Foreground="White" />
+                </StackPanel>
+                <StackPanel Grid.Column="1">
+                    <TextBlock x:Name="LiveKillsText" Text="0" FontSize="18" FontWeight="SemiBold" Foreground="White" />
+                    <TextBlock Text="KILLS" FontSize="9" CharacterSpacing="100" Opacity="0.65" Foreground="White" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

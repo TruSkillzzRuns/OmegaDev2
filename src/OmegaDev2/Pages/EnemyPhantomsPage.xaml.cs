@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI.Dispatching;
@@ -14,6 +16,25 @@ using OmegaDev2.Services;
 using Windows.UI;
 
 namespace OmegaDev2.Pages;
+
+// Boss Roster card — a real boss-tier AgentPrototype (Doom/Kraven/Green
+// Goblin-class content), spawned as a plain hostile Agent, NOT the
+// synthetic Player+Avatar phantom-hero pipeline PhantomHeroCard's roster
+// uses. Same portrait-sweep shape as PhantomHeroCard for a consistent look.
+public sealed class BossCard : INotifyPropertyChanged
+{
+    public event PropertyChangedEventHandler? PropertyChanged;
+    private void Raise([CallerMemberName] string? n = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
+
+    public BossEntry Entry { get; }
+    public string Name => Entry.Name;
+
+    private BitmapImage? _portrait;
+    public BitmapImage? Portrait { get => _portrait; set { _portrait = value; Raise(); } }
+    public bool PortraitRequested;
+
+    public BossCard(BossEntry entry) => Entry = entry;
+}
 
 public sealed class NemesisRow
 {
@@ -72,12 +93,16 @@ public sealed partial class EnemyPhantomsPage : Page
 {
     private readonly ServerApiClient _api = new();
     private readonly List<PhantomHeroCard> _allHeroes = new();
+    private readonly List<BossCard> _allBosses = new();
     public ObservableCollection<PhantomHeroCard> ShownHeroes { get; } = new();
+    public ObservableCollection<BossCard> ShownBosses { get; } = new();
     public ObservableCollection<EnemyRow> Enemies { get; } = new();
     public ObservableCollection<NemesisRow> NemesisEntries { get; } = new();
 
     private PhantomHeroCard? _selectedHero;
+    private BossCard? _selectedBoss;
     private bool _portraitSweepRunning;
+    private bool _bossPortraitSweepRunning;
     private bool _pollInFlight;
     private bool _rogueSuppressToggleEvent;
     private CancellationTokenSource? _pageCts = new();
@@ -91,6 +116,7 @@ public sealed partial class EnemyPhantomsPage : Page
 
         InitializeComponent();
         HeroList.ItemsSource = ShownHeroes;
+        BossList.ItemsSource = ShownBosses;
         EnemyList.ItemsSource = Enemies;
         NemesisList.ItemsSource = NemesisEntries;
 
@@ -208,6 +234,148 @@ public sealed partial class EnemyPhantomsPage : Page
         catch (OperationCanceledException) { }
         catch { }
         finally { _portraitSweepRunning = false; }
+    }
+
+    // ---------------- Boss Roster ----------------
+
+    private async void LoadBossRoster_Click(object sender, RoutedEventArgs e)
+    {
+        LoadBossBtn.IsEnabled = false;
+        BossStatusText.Text = "loading bosses…";
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.GetBossRosterAsync();
+            if (resp == null || resp.Bosses.Count == 0)
+            {
+                BossStatusText.Text = "no bosses — server offline?";
+                return;
+            }
+
+            _allBosses.Clear();
+            foreach (var boss in resp.Bosses)
+                _allBosses.Add(new BossCard(boss));
+            ApplyBossFilter();
+            BossStatusText.Text = $"{resp.Count} bosses";
+
+            _ = RunBossPortraitSweepAsync();
+        }
+        catch (Exception ex)
+        {
+            BossStatusText.Text = $"error: {ex.Message}";
+        }
+        finally
+        {
+            LoadBossBtn.IsEnabled = true;
+        }
+    }
+
+    private void BossSearchBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyBossFilter();
+
+    private void ApplyBossFilter()
+    {
+        string q = BossSearchBox.Text?.Trim() ?? "";
+        ShownBosses.Clear();
+        foreach (var card in _allBosses)
+        {
+            if (q.Length > 0 && card.Name.Contains(q, StringComparison.OrdinalIgnoreCase) == false)
+                continue;
+            ShownBosses.Add(card);
+        }
+    }
+
+    private async Task RunBossPortraitSweepAsync()
+    {
+        if (_bossPortraitSweepRunning) return;
+        _bossPortraitSweepRunning = true;
+        var ct = _pageCts?.Token ?? CancellationToken.None;
+        try
+        {
+            string portraitBase = AppState.ServerUrl.TrimEnd('/');
+            using var throttle = new SemaphoreSlim(8);
+            var tasks = new List<Task>();
+            foreach (var card in _allBosses)
+            {
+                if (card.PortraitRequested || string.IsNullOrEmpty(card.Entry.PortraitPath)) continue;
+                card.PortraitRequested = true;
+                string candidate = card.Entry.PortraitPath!;
+                await throttle.WaitAsync(ct);
+                tasks.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        byte[]? png = await _api.GetTexturePngAsync(candidate, ct);
+                        if (png == null || png.Length == 0) return;
+                        string url = $"{portraitBase}/webapi/texbyname?name={Uri.EscapeDataString(candidate)}";
+                        DispatcherQueue.TryEnqueue(() =>
+                        {
+                            try { card.Portrait = new BitmapImage(new Uri(url)) { DecodePixelWidth = 96 }; }
+                            catch { }
+                        });
+                    }
+                    catch { }
+                    finally { throttle.Release(); }
+                }, ct));
+            }
+            await Task.WhenAll(tasks);
+        }
+        catch (OperationCanceledException) { }
+        catch { }
+        finally { _bossPortraitSweepRunning = false; }
+    }
+
+    private void BossList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        _selectedBoss = BossList.SelectedItem as BossCard;
+        SpawnBossBtn.IsEnabled = _selectedBoss != null;
+    }
+
+    private async void SpawnBoss_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedBoss == null) return;
+        SpawnBossBtn.IsEnabled = false;
+        BossStatusText.Text = "spawning boss…";
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.PostBossSpawnAsync(new
+            {
+                playerName = TargetPlayer,
+                bossRef = _selectedBoss.Entry.ProtoRef,
+                count = (int)BossCountBox.Value,
+            });
+
+            if (resp == null)
+                BossStatusText.Text = "no response from server";
+            else if (string.IsNullOrEmpty(resp.Error) == false)
+                BossStatusText.Text = resp.Error;
+            else
+                BossStatusText.Text = resp.Failed > 0
+                    ? $"spawned {resp.Spawned}, failed {resp.Failed}: {resp.FirstError}"
+                    : $"{_selectedBoss.Name} inbound — good luck";
+
+            await PollEnemiesAsync();
+        }
+        catch (Exception ex)
+        {
+            BossStatusText.Text = $"error: {ex.Message}";
+        }
+        finally
+        {
+            SpawnBossBtn.IsEnabled = _selectedBoss != null;
+        }
+    }
+
+    private async void ClearBosses_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.PostBossClearAsync(TargetPlayer);
+            BossStatusText.Text = resp != null ? $"cleared {resp.Removed}" : "no response";
+            await PollEnemiesAsync();
+        }
+        catch (Exception ex) { BossStatusText.Text = $"error: {ex.Message}"; }
     }
 
     private void HeroList_SelectionChanged(object sender, SelectionChangedEventArgs e)

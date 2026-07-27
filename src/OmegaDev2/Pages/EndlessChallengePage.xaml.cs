@@ -94,6 +94,7 @@ public sealed partial class EndlessChallengePage : Page
     private readonly DispatcherQueueTimer _timer;
     private bool _pollInFlight;
     private string? _lastPolledState;
+    private EndlessOverlayWindow? _overlayWindow;
 
     public EndlessChallengePage()
     {
@@ -335,6 +336,31 @@ public sealed partial class EndlessChallengePage : Page
     }
 
     // ---------------- Live status ----------------
+
+    private void ShowOverlayBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_overlayWindow != null)
+        {
+            // Already open — bring it forward instead of spawning a second one.
+            _overlayWindow.Activate();
+            return;
+        }
+
+        _overlayWindow = new EndlessOverlayWindow(TargetPlayer);
+        _overlayWindow.SetClickThrough(OverlayClickThroughCheck.IsChecked == true);
+        _overlayWindow.Closed += (_, _) => _overlayWindow = null;
+        _overlayWindow.Activate();
+    }
+
+    /// <summary>
+    /// Click-through can only be flipped from here, not from the overlay
+    /// itself — once enabled, every click on the overlay (including its own
+    /// controls) passes straight through to the game underneath it.
+    /// </summary>
+    private void OverlayClickThroughCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        _overlayWindow?.SetClickThrough(OverlayClickThroughCheck.IsChecked == true);
+    }
 
     private async Task PollStatusAsync()
     {

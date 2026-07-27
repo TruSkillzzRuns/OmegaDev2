@@ -338,6 +338,18 @@ public sealed class ServerApiClient : IDisposable
     public Task<PhantomOpResponse?> PostEnemyPhantomDespawnOneAsync(string playerName, ulong targetId, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/arena/enemyphantoms/clear", new { playerName, targetId = targetId.ToString() }, ct);
 
+    // ---- Boss Roster — real boss-tier AgentPrototypes (Doom/Kraven/Green
+    // Goblin-class content), spawned as plain hostile Agents, NOT the
+    // synthetic Player+Avatar phantom-hero pipeline the calls above use. ----
+    public Task<BossRosterResponse?> GetBossRosterAsync(CancellationToken ct = default)
+        => GetJsonAsync<BossRosterResponse>("webapi/bossroster/catalog", ct);
+
+    public Task<PhantomSpawnResponse?> PostBossSpawnAsync(object body, CancellationToken ct = default)
+        => PostJsonAsync<PhantomSpawnResponse>("webapi/bossroster/spawn", body, ct);
+
+    public Task<PhantomOpResponse?> PostBossClearAsync(string playerName, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/bossroster/clear", new { playerName }, ct);
+
     public Task<EnemyPhantomStatusResponse?> GetEnemyPhantomStatusAsync(string player, CancellationToken ct = default)
         => GetJsonAsync<EnemyPhantomStatusResponse>($"webapi/arena/enemyphantoms/status?player={Uri.EscapeDataString(player ?? "*")}", ct);
 
@@ -573,6 +585,22 @@ public sealed class PhantomHeroEntry
     // Absent on old server builds; treat missing as "avatar" for compat.
     public string? Kind { get; set; }
     public bool IsTeamUp => string.Equals(Kind, "teamup", System.StringComparison.OrdinalIgnoreCase);
+}
+
+public sealed class BossRosterResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public int Count { get; set; }
+    public System.Collections.Generic.List<BossEntry> Bosses { get; set; } = new();
+}
+
+public sealed class BossEntry
+{
+    public string ProtoRef { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Path { get; set; } = "";
+    public string? PortraitPath { get; set; }
 }
 
 public sealed class PhantomCostumesResponse

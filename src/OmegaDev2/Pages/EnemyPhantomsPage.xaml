@@ -54,6 +54,7 @@
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="280" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="340" />
             </Grid.ColumnDefinitions>
@@ -111,8 +112,89 @@
                 </Grid>
             </Border>
 
-            <!-- Hostiles in play -->
+            <!-- Boss roster — real boss-tier enemies (Doom/Kraven/Green
+                 Goblin-class content), spawned as plain hostiles, not
+                 phantom heroes. -->
             <Border Grid.Column="1"
+                    Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
+                    CornerRadius="6"
+                    Padding="6"
+                    Margin="0,0,12,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="8,6,8,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="2">
+                            <TextBlock Text="BOSS ROSTER"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       CharacterSpacing="180"
+                                       Foreground="{ThemeResource OmegaDev2.DangerEmphasisBrush}" />
+                            <TextBlock Text="real bosses — not phantom heroes"
+                                       FontSize="10"
+                                       Opacity="0.55"
+                                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                        </StackPanel>
+                        <Button Grid.Column="1" x:Name="LoadBossBtn" Content="Load" FontSize="11" Click="LoadBossRoster_Click" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <TextBox x:Name="BossSearchBox"
+                             Grid.Row="1"
+                             Margin="8,0,8,4"
+                             PlaceholderText="search boss..."
+                             TextChanged="BossSearchBox_TextChanged" />
+
+                    <ListView x:Name="BossList"
+                              Grid.Row="2"
+                              SelectionChanged="BossList_SelectionChanged">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:BossCard">
+                                <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,2">
+                                    <Border Width="52" Height="40" CornerRadius="4"
+                                            Background="{ThemeResource OmegaDev2.PageBackgroundBrush}">
+                                        <Image Source="{x:Bind Portrait, Mode=OneWay}"
+                                               Stretch="UniformToFill" />
+                                    </Border>
+                                    <TextBlock Text="{x:Bind Name}" FontSize="13" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <Grid Grid.Row="3" Margin="8,6,8,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <NumberBox x:Name="BossCountBox" Grid.Column="0" Header="Count" Value="1" Minimum="1" Maximum="10" SpinButtonPlacementMode="Compact" Width="90" />
+                        <Button Grid.Column="1" x:Name="SpawnBossBtn" Content="Spawn Boss" Click="SpawnBoss_Click"
+                                Background="#B03A3A" Foreground="White" IsEnabled="False"
+                                Margin="8,0,8,0" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" />
+                        <Button Grid.Column="2" Content="Clear" Click="ClearBosses_Click" VerticalAlignment="Bottom" />
+                    </Grid>
+                    <TextBlock x:Name="BossStatusText"
+                               Grid.Row="4"
+                               Margin="8,0,8,6"
+                               FontSize="11"
+                               TextWrapping="Wrap"
+                               Opacity="0.75"
+                               Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                </Grid>
+            </Border>
+
+            <!-- Hostiles in play -->
+            <Border Grid.Column="2"
                     Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
                     CornerRadius="6"
                     Padding="12"
@@ -187,7 +269,7 @@
             </Border>
 
             <!-- Spawn panel -->
-            <StackPanel Grid.Column="2" Spacing="12">
+            <StackPanel Grid.Column="3" Spacing="12">
                 <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
                         CornerRadius="6"
                         Padding="12">
