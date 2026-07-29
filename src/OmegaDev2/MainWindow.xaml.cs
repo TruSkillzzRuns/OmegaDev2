@@ -135,6 +135,7 @@ public sealed partial class MainWindow : Window
             "stashmanager"  => typeof(StashManagerPage),
             "currencyeditor" => typeof(CurrencyEditorPage),
             "accounts"      => typeof(AccountManagerPage),
+            "accountmigration" => typeof(AccountMigrationPage),
             "console"       => typeof(ConsolePage),
             "logviewer"     => typeof(LogViewerPage),
             "setup"         => typeof(SetupPage),

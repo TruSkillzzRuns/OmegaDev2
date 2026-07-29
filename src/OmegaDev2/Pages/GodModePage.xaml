@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:OmegaDev2.Pages"
+    xmlns:controls="using:OmegaDev2.Controls"
     Background="{ThemeResource OmegaDev2.PageBackgroundBrush}"
     NavigationCacheMode="Required">
 
@@ -18,24 +19,33 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Header -->
-            <StackPanel Grid.Row="0" Spacing="4">
-                <TextBlock Text="God Mode"
-                           FontSize="32"
-                           FontWeight="SemiBold"
-                           Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
-                <TextBlock FontSize="13"
-                           TextWrapping="Wrap"
-                           MaxWidth="900"
-                           Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}"
-                           Text="Player buff cabinet. Toggles and sliders apply live to your current avatar's PropertyCollection — no client restart needed. Every change round-trips to the server and the response snapshot resyncs the UI." />
-                <TextBox x:Name="PlayerBox"
-                         Width="220"
-                         PlaceholderText="player (* = first online)"
-                         Text="*"
-                         HorizontalAlignment="Left"
-                         Margin="0,6,0,0" />
-            </StackPanel>
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Header -->
+                <StackPanel Grid.Column="0" Spacing="4" HorizontalAlignment="Left">
+                    <TextBlock Text="God Mode"
+                               FontSize="32"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                    <TextBlock FontSize="13"
+                               TextWrapping="Wrap"
+                               MaxWidth="900"
+                               Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}"
+                               Text="Player buff cabinet. Toggles and sliders apply live to your current avatar's PropertyCollection — no client restart needed. Every change round-trips to the server and the response snapshot resyncs the UI." />
+                    <TextBox x:Name="PlayerBox"
+                             Width="220"
+                             PlaceholderText="player (* = first online)"
+                             Text="*"
+                             HorizontalAlignment="Left"
+                             Margin="0,6,0,0" />
+                </StackPanel>
+
+                <controls:ServerVersionPicker Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top" />
+            </Grid>
 
             <!-- MASTER GOD MODE BANNER -->
             <Border Grid.Row="1"

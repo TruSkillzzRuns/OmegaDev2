@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:OmegaDev2.Pages"
+    xmlns:controls="using:OmegaDev2.Controls"
     Background="{ThemeResource OmegaDev2.PageBackgroundBrush}"
     NavigationCacheMode="Required">
 
@@ -14,18 +15,27 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <StackPanel Grid.Row="0" Spacing="4">
-            <TextBlock Text="Live Events"
-                       FontSize="32"
-                       FontWeight="SemiBold"
-                       Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
-            <TextBlock FontSize="13"
-                       TextWrapping="Wrap"
-                       MaxWidth="900"
-                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}"
-                       Text="MHO's own real live-tuning events (loot/XP multiplier holidays like OdinsBounty, WinterHoliday) — normally calendar-driven. Force one on right now for testing, or clear the override to restore the normal schedule." />
-        </StackPanel>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Header -->
+            <StackPanel Grid.Column="0" Spacing="4" HorizontalAlignment="Left">
+                <TextBlock Text="Live Events"
+                           FontSize="32"
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
+                <TextBlock FontSize="13"
+                           TextWrapping="Wrap"
+                           MaxWidth="900"
+                           Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}"
+                           Text="MHO's own real live-tuning events (loot/XP multiplier holidays like OdinsBounty, WinterHoliday) — normally calendar-driven. Force one on right now for testing, or clear the override to restore the normal schedule." />
+            </StackPanel>
+
+            <controls:ServerVersionPicker Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top" />
+        </Grid>
 
         <!-- Toolbar -->
         <Border Grid.Row="1"

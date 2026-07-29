@@ -21,7 +21,11 @@ public sealed partial class TeleportPadPage : Page
         RegionList.ItemsSource = _filtered;
         SeedCategories(new List<string>()); // empty until first load
         Loaded += async (_, _) => await LoadRegionsAsync();
+        AppState.ServerUrlChanged += OnServerUrlChanged;
+        Unloaded += (_, _) => AppState.ServerUrlChanged -= OnServerUrlChanged;
     }
+
+    private async void OnServerUrlChanged() => await LoadRegionsAsync();
 
     private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await LoadRegionsAsync();
 
@@ -29,7 +33,7 @@ public sealed partial class TeleportPadPage : Page
     {
         try
         {
-            _api.BaseUrl = ServerUrlBox.Text?.Trim() ?? "http://localhost:8080";
+            _api.BaseUrl = AppState.ServerUrl;
             SetStatus("Loading regions from server…", accent: false);
             RefreshButton.IsEnabled = false;
 
@@ -104,6 +108,7 @@ public sealed partial class TeleportPadPage : Page
         LastActionText.Text = $"Sending teleport → {r.DisplayName}…";
         try
         {
+            _api.BaseUrl = AppState.ServerUrl;
             var resp = await _api.PostJsonAsync<TeleportResponse>("/webapi/regions/teleport", new { regionRef = r.Path });
             if (resp?.Ok == true)
                 LastActionText.Text = $"✓ Queued teleport to {r.DisplayName}. Watch your client for the load screen.";

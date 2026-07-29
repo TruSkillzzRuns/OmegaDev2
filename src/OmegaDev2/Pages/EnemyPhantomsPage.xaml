@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:OmegaDev2.Pages"
+    xmlns:controls="using:OmegaDev2.Controls"
     Background="{ThemeResource OmegaDev2.PageBackgroundBrush}"
     NavigationCacheMode="Enabled">
 
@@ -13,18 +14,27 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,14">
-            <TextBlock Text="Enemy Phantoms"
-                       FontSize="32"
-                       FontWeight="SemiBold"
-                       Foreground="{ThemeResource OmegaDev2.DangerEmphasisBrush}" />
-            <TextBlock Text="Spawn hostile AI heroes that hunt you and your squad — full power kits, real gear, killable. Your phantoms will fight back. Kills against you are never credited to anyone."
-                       FontSize="13"
-                       TextWrapping="Wrap"
-                       MaxWidth="920"
-                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
-        </StackPanel>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Header -->
+            <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,0,14" HorizontalAlignment="Left">
+                <TextBlock Text="Enemy Phantoms"
+                           FontSize="32"
+                           FontWeight="SemiBold"
+                           Foreground="{ThemeResource OmegaDev2.DangerEmphasisBrush}" />
+                <TextBlock Text="Spawn hostile AI heroes that hunt you and your squad — full power kits, real gear, killable. Your phantoms will fight back. Kills against you are never credited to anyone."
+                           FontSize="13"
+                           TextWrapping="Wrap"
+                           MaxWidth="920"
+                           Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+            </StackPanel>
+
+            <controls:ServerVersionPicker Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top" />
+        </Grid>
 
         <!-- Toolbar -->
         <Border Grid.Row="1"
