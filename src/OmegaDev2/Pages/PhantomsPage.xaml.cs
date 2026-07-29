@@ -341,12 +341,27 @@ public sealed partial class PhantomsPage : Page
     {
         try
         {
-            if (_costumeCache.TryGetValue(slot.Hero.ProtoRef, out var cached) == false)
+            // Keyed by server URL + hero ref, not just hero ref -- this page
+            // has NavigationCacheMode="Enabled" (survives switching away and
+            // back), so a hero's costume list fetched while pointed at one
+            // server version must not be silently reused after switching to
+            // another via ServerVersionPicker.
+            string cacheKey = $"{AppState.ServerUrl}|{slot.Hero.ProtoRef}";
+
+            if (_costumeCache.TryGetValue(cacheKey, out var cached) == false)
             {
                 _api.BaseUrl = AppState.ServerUrl;
                 var resp = await _api.GetPhantomCostumesAsync(slot.Hero.ProtoRef);
                 cached = resp?.Costumes ?? new List<PhantomCostumeEntry>();
-                _costumeCache[slot.Hero.ProtoRef] = cached;
+
+                // Only cache a real, successful response. Caching a failed
+                // request's empty result here used to permanently stick a
+                // hero on "no costumes" for the rest of the app session --
+                // even retrying later (e.g. once the server finished
+                // starting up) would just hit the poisoned cache entry
+                // instead of ever asking again.
+                if (resp != null && resp.Ok)
+                    _costumeCache[cacheKey] = cached;
             }
             slot.SetCostumes(cached, selectRef);
         }

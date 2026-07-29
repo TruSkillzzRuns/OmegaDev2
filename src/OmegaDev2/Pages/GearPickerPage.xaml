@@ -53,6 +53,10 @@
                           Width="200"
                           SelectionChanged="AvatarFilter_SelectionChanged"
                           VerticalAlignment="Center" />
+                <CheckBox x:Name="ForceEquipCostumeToggle"
+                          Content="Force-equip costumes on click (bypass store)"
+                          VerticalAlignment="Center"
+                          ToolTipService.ToolTip="When checked, clicking a Costume card force-equips it directly on the target player's live avatar via ChangeCostume() -- no item, no inventory, no store/closet involved. Test tool for costumes hidden by the retail Closet UI's DesignState gate." />
                 <TextBlock x:Name="ShownCountText"
                            VerticalAlignment="Center"
                            Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />

@@ -295,6 +295,12 @@ public sealed class ServerApiClient : IDisposable
         return ((int)resp.StatusCode, await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false));
     }
 
+    // Force-equips a costume directly on the target player's own live avatar,
+    // bypassing the item/store/closet flow entirely (no item created, no
+    // inventory touched, no CostumeUnlock granted) -- see AvatarCostumeWebHandler.
+    public Task<PhantomOpResponse?> PostAvatarCostumeAsync(string? playerName, string? playerDbId, string costumeProtoRef, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/avatar/costume", new { playerName, playerDbId, costumeProtoRef }, ct);
+
     private static readonly JsonSerializerOptions s_camelCase = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     // ---- Phantom Heroes ----

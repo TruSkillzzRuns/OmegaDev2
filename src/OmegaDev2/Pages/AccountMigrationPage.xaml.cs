@@ -176,6 +176,15 @@ public sealed partial class AccountMigrationPage : Page
         ServerControlStatusText.Text = result.Message;
     }
 
+    private void StopServer_Click(object sender, RoutedEventArgs e)
+    {
+        string tag = (string)((Button)sender).Tag;
+        string repoPath = RepoPathBox.Text?.Trim() ?? "";
+
+        var result = ServerLaunchService.StopServer(repoPath, tag);
+        ServerControlStatusText.Text = result.Message;
+    }
+
     private void LaunchClient_Click(object sender, RoutedEventArgs e)
     {
         string tag = (string)((Button)sender).Tag;

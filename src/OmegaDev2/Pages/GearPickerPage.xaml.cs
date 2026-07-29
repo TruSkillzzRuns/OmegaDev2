@@ -441,9 +441,15 @@ public sealed partial class GearPickerPage : Page
     }
 
     // === Basket ============================================================
-    private void ItemsGrid_ItemClick(object sender, ItemClickEventArgs e)
+    private async void ItemsGrid_ItemClick(object sender, ItemClickEventArgs e)
     {
         if (e.ClickedItem is not GearItemCard card) return;
+
+        if (ForceEquipCostumeToggle.IsChecked == true && card.Entry.Category == "Costume")
+        {
+            await ForceEquipCostumeAsync(card.Entry);
+            return;
+        }
 
         int defCount = (int)Math.Max(1, DefaultCountBox.Value);
         int defLevel = (int)Math.Max(0, DefaultLevelBox.Value);
@@ -451,6 +457,32 @@ public sealed partial class GearPickerPage : Page
         var existing = Basket.FirstOrDefault(b => b.ProtoRef == card.ProtoRef);
         if (existing != null) existing.Count += defCount;
         else Basket.Add(new BasketEntry(card.Entry, defCount, defLevel));
+    }
+
+    // Force-equips a costume directly on the target player's live avatar via
+    // /webapi/avatar/costume, bypassing the item/store/closet flow entirely.
+    // Test tool for costumes hidden by the retail Closet UI's DesignState
+    // gate (real, fully-populated costumes like the 1.53 Age of Apocalypse
+    // Horsemen that ChangeCostume() can still render even though the store
+    // can't sell them).
+    private async Task ForceEquipCostumeAsync(ItemCatalogEntry entry)
+    {
+        var raw = (PlayerBox.Text ?? "*").Trim();
+        string? name = null, dbId = null;
+        if (raw.StartsWith("0x", StringComparison.OrdinalIgnoreCase)) dbId = raw;
+        else name = raw;
+
+        StatusText.Text = $"force-equipping {entry.Name}...";
+        try
+        {
+            var s = SettingsService.Current;
+            using var c = new ServerApiClient(s.ServerBaseUrl, s.BearerToken, TimeSpan.FromSeconds(30));
+            var resp = await c.PostAvatarCostumeAsync(name, dbId, entry.ProtoRef);
+            StatusText.Text = resp == null
+                ? "no response from server"
+                : (resp.Ok ? resp.Message ?? "applied." : $"[error] {resp.Error}");
+        }
+        catch (Exception ex) { StatusText.Text = ex.Message; }
     }
 
     private void RemoveFromBasket_Click(object sender, RoutedEventArgs e)

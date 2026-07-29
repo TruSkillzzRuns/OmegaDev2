@@ -155,6 +155,58 @@ public static class ServerLaunchService
         }
     }
 
+    // Stops the server for this version. Tries the PID file first (fast
+    // path, written by StartServer above), then falls back to matching by
+    // exact exe path across every running MHServerEmu.exe -- this catches
+    // instances started any other way (manually, via the .bat scripts, or
+    // a previous app session) that this session's PID file doesn't know
+    // about, which a PID-file-only stop would silently miss (same fix
+    // applied to StopServer*.bat).
+    public static LaunchResult StopServer(string repoDir, string versionTag)
+    {
+        if (string.IsNullOrWhiteSpace(repoDir) || Directory.Exists(repoDir) == false)
+            return new LaunchResult { Ok = false, Message = $"MHServerEmu folder not found: {repoDir}" };
+
+        string exePath = Path.Combine(BuildDirFor(repoDir, versionTag), "MHServerEmu.exe");
+        string pidFile = PidFilePathFor(repoDir, versionTag);
+        var stoppedPids = new System.Collections.Generic.List<int>();
+
+        if (File.Exists(pidFile))
+        {
+            try
+            {
+                if (int.TryParse(File.ReadAllText(pidFile).Trim(), out int pid))
+                {
+                    using Process proc = Process.GetProcessById(pid);
+                    if (proc.HasExited == false && string.Equals(proc.ProcessName, "MHServerEmu", StringComparison.OrdinalIgnoreCase))
+                    {
+                        proc.Kill();
+                        stoppedPids.Add(pid);
+                    }
+                }
+            }
+            catch { /* stale/unreadable PID -- fall through to exe-path match */ }
+            try { File.Delete(pidFile); } catch { }
+        }
+
+        foreach (Process proc in Process.GetProcessesByName("MHServerEmu"))
+        {
+            try
+            {
+                if (stoppedPids.Contains(proc.Id)) continue;
+                if (string.Equals(proc.MainModule?.FileName, exePath, StringComparison.OrdinalIgnoreCase) == false) continue;
+                proc.Kill();
+                stoppedPids.Add(proc.Id);
+            }
+            catch { /* access denied / already exited -- skip */ }
+            finally { proc.Dispose(); }
+        }
+
+        return stoppedPids.Count > 0
+            ? new LaunchResult { Ok = true, Message = $"Stopped {versionTag} server (PID {string.Join(", ", stoppedPids)})." }
+            : new LaunchResult { Ok = true, Message = $"No {versionTag} MHServerEmu instance is running." };
+    }
+
     private static string SiteConfigNameFor(string versionTag) => versionTag switch
     {
         "v48" => "SiteConfig_v48.xml",
