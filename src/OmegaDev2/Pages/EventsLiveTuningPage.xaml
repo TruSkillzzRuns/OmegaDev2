@@ -62,33 +62,49 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Text="KNOWN EVENTS — click Force On to activate one" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160"
-                           Margin="0,0,0,8"
-                           Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
-                <ListView x:Name="EventList" Grid.Row="1" SelectionMode="None">
+                <Grid Grid.Row="0" Margin="12,0,12,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="280" />
+                        <ColumnDefinition Width="110" />
+                        <ColumnDefinition Width="100" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="EVENT" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160"
+                               Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <TextBlock Grid.Column="1" Text="STATUS" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160"
+                               Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                    <TextBlock Grid.Column="2" Text="ACTION" FontSize="11" FontWeight="SemiBold" CharacterSpacing="160"
+                               Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
+                </Grid>
+                <ListView x:Name="EventList" Grid.Row="1" SelectionMode="None" Padding="0">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="local:LiveTuningEventRow">
-                            <Grid Margin="0,3">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="{x:Bind Name}" FontSize="13" VerticalAlignment="Center" />
-                                <Border Grid.Column="1"
-                                        Background="{ThemeResource OmegaDev2.AccentBrush}"
-                                        CornerRadius="3"
-                                        Padding="6,2"
-                                        Margin="0,0,10,0"
-                                        Visibility="{x:Bind ActiveBadgeVisibility}">
-                                    <TextBlock Text="ACTIVE" FontSize="10" FontWeight="SemiBold" />
-                                </Border>
-                                <Button Grid.Column="2"
-                                        Content="Force On"
-                                        FontSize="11"
-                                        Tag="{x:Bind Name}"
-                                        Click="RowActivate_Click" />
-                            </Grid>
+                            <Border BorderBrush="{ThemeResource OmegaDev2.PageBackgroundBrush}"
+                                    BorderThickness="0,0,0,1"
+                                    Padding="12,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="280" />
+                                        <ColumnDefinition Width="110" />
+                                        <ColumnDefinition Width="100" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0" Text="{x:Bind Name}" FontSize="13" VerticalAlignment="Center" />
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <Ellipse Width="8" Height="8" Fill="{x:Bind StatusDotBrush}" />
+                                        <TextBlock Text="{x:Bind StatusLabel}" FontSize="12" FontWeight="SemiBold"
+                                                   Foreground="{x:Bind StatusTextBrush}" />
+                                    </StackPanel>
+
+                                    <Button Grid.Column="2"
+                                            Content="{x:Bind ToggleButtonLabel}"
+                                            FontSize="11"
+                                            MinWidth="84"
+                                            HorizontalAlignment="Left"
+                                            Background="{x:Bind ToggleButtonBrush}"
+                                            Click="RowToggle_Click" />
+                                </Grid>
+                            </Border>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>

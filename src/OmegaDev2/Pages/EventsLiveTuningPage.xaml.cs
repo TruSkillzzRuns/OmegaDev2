@@ -3,16 +3,29 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using OmegaDev2.Services;
 
 namespace OmegaDev2.Pages;
 
 public sealed class LiveTuningEventRow
 {
+    private static Brush Resource(string key) => Application.Current.Resources[key] as Brush;
+
     public string Name { get; }
     public bool IsActive { get; }
-    public Microsoft.UI.Xaml.Visibility ActiveBadgeVisibility
-        => IsActive ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+
+    public string StatusLabel => IsActive ? "Active" : "Off";
+    public Brush StatusDotBrush => Resource(IsActive ? "OmegaDev2.SuccessBrush" : "OmegaDev2.TextTertiaryBrush");
+    public Brush StatusTextBrush => Resource(IsActive ? "OmegaDev2.SuccessBrush" : "OmegaDev2.TextSecondaryBrush");
+
+    // Plain button content/state — deliberately NOT a two-way-bound ToggleSwitch. WinUI fires
+    // Toggled on ANY IsOn change, including ones caused by container virtualization recycling a
+    // ToggleSwitch into a different row during RefreshAsync()'s Events.Clear()/Add() cycle, which
+    // previously caused a feedback loop (toggle -> API call -> refresh -> spurious re-toggle ->
+    // API call -> ...). A Button's Click only fires on a real user gesture, so that loop can't happen.
+    public string ToggleButtonLabel => IsActive ? "Turn Off" : "Turn On";
+    public Brush ToggleButtonBrush => IsActive ? Resource("OmegaDev2.PanelSecondaryBrush") : Resource("OmegaDev2.AccentBrush");
 
     public LiveTuningEventRow(string name, bool isActive)
     {
@@ -40,8 +53,16 @@ public sealed partial class EventsLiveTuningPage : Page
 
     private async void Refresh_Click(object sender, RoutedEventArgs e) => await RefreshAsync();
 
+    // Reentrancy guard: RefreshAsync() and toggle clicks are both async and both call the API,
+    // so without this a fast double-click (or a click landing mid-refresh) could overlap two
+    // read-modify-write cycles against the same override file.
+    private bool _busy;
+
     private async System.Threading.Tasks.Task RefreshAsync()
     {
+        if (_busy)
+            return;
+        _busy = true;
         try
         {
             _api.BaseUrl = AppState.ServerUrl;
@@ -57,31 +78,46 @@ public sealed partial class EventsLiveTuningPage : Page
                 Events.Add(new LiveTuningEventRow(name, resp.ActiveToday.Contains(name)));
 
             StatusText.Text = resp.OverrideActive
-                ? $"override active: '{resp.OverrideEventName}' forced on"
+                ? $"override active: {resp.ActiveToday.Count} event(s) forced on"
                 : $"{resp.ActiveToday.Count} active today (calendar-driven, no override)";
         }
         catch (Exception ex)
         {
             StatusText.Text = $"error: {ex.Message}";
         }
+        finally
+        {
+            _busy = false;
+        }
     }
 
-    private async void RowActivate_Click(object sender, RoutedEventArgs e)
+    private async void RowToggle_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.Tag is not string eventName || string.IsNullOrWhiteSpace(eventName))
+        if (_busy)
             return;
 
+        if ((sender as FrameworkElement)?.DataContext is not LiveTuningEventRow row)
+            return;
+
+        _busy = true;
         try
         {
             _api.BaseUrl = AppState.ServerUrl;
-            var resp = await _api.PostLiveTuningActivateAsync(eventName);
+            var resp = row.IsActive
+                ? await _api.PostLiveTuningDeactivateAsync(row.Name)
+                : await _api.PostLiveTuningActivateAsync(row.Name);
             StatusText.Text = resp?.Message ?? resp?.Error ?? "no response";
-            await RefreshAsync();
         }
         catch (Exception ex)
         {
             StatusText.Text = $"error: {ex.Message}";
         }
+        finally
+        {
+            _busy = false;
+        }
+
+        await RefreshAsync();
     }
 
     private async void Clear_Click(object sender, RoutedEventArgs e)

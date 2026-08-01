@@ -500,6 +500,9 @@ public sealed class ServerApiClient : IDisposable
     public Task<PhantomOpResponse?> PostLiveTuningActivateAsync(string eventName, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/livetuning/events/activate", new { eventName }, ct);
 
+    public Task<PhantomOpResponse?> PostLiveTuningDeactivateAsync(string eventName, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/livetuning/events/deactivate", new { eventName }, ct);
+
     public Task<PhantomOpResponse?> PostLiveTuningClearAsync(CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/livetuning/events/clear", new { }, ct);
 
@@ -979,7 +982,6 @@ public sealed class LiveTuningEventsResponse
     public List<string> KnownEvents { get; set; } = new();
     public List<string> ActiveToday { get; set; } = new();
     public bool OverrideActive { get; set; }
-    public string? OverrideEventName { get; set; }
 }
 
 public sealed class ProtoEditorDiscoverResponse
