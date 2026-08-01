@@ -418,6 +418,16 @@ public sealed class ServerApiClient : IDisposable
     public Task<PhantomOpResponse?> PostNemesisSpawnNowAsync(string playerName, string heroRef, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/nemesis", new { playerName, action = "spawn", heroRef }, ct);
 
+    /// <summary>
+    /// Bounty Hunt — warps the player to a random arena; the target ambushes
+    /// them there 30-60s after arrival at the given tier (1-10, independent
+    /// of the nemesis's own persisted rank). Reward = the existing Bounty
+    /// Board table payout + tier-scaled currency (+ a guaranteed BiS piece
+    /// at tier 9-10). See Player.BountyHunt.cs server-side.
+    /// </summary>
+    public Task<PhantomOpResponse?> PostNemesisBountyHuntStartAsync(string playerName, string heroRef, int rank, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/nemesis", new { playerName, action = "bounty-hunt-start", heroRef, rank }, ct);
+
     public Task<PhantomOpResponse?> PostWavesStartAsync(object body, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/arena/waves/start", body, ct);
 
@@ -728,6 +738,8 @@ public sealed class NemesisEntryDto
     public int Kills { get; set; }
     public int RevengeKills { get; set; }
     public bool Defeated { get; set; }
+    public bool IsBoss { get; set; }
+    public int GrudgeScore { get; set; }
     public string LastKillerName { get; set; } = string.Empty;
     public string Suffix { get; set; } = string.Empty;
     public long LastKillMs { get; set; }

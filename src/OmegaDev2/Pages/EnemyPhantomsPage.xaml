@@ -278,8 +278,13 @@
                 </Grid>
             </Border>
 
-            <!-- Spawn panel -->
-            <StackPanel Grid.Column="3" Spacing="12">
+            <!-- Spawn panel — wrapped in its own ScrollViewer since this
+                 column (Unleash + Rogue Encounter + Nemesis Roster, the
+                 latter now including Bounty Hunt) can outgrow a shorter
+                 window; the outer page Grid has no scroll of its own, so
+                 without this the bottom of the stack was unreachable. -->
+            <ScrollViewer Grid.Column="3" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
+            <StackPanel Spacing="12">
                 <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
                         CornerRadius="6"
                         Padding="12">
@@ -377,7 +382,7 @@
                                        Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
                             <Button Grid.Column="1" Content="Refresh" FontSize="11" Click="NemesisRefresh_Click" />
                         </Grid>
-                        <TextBlock Text="Phantoms that have killed you. Higher rank = tougher when they return in a Rogue Encounter. Kill them or banish to close the loop."
+                        <TextBlock Text="Phantoms that have killed you. Higher rank = tougher when they return in a Rogue Encounter. Kill them or banish to close the loop. Bounty Hunt: pick a tier (1-10, independent of their rank) and warp to a random arena — they'll find you 30-60s after you arrive, and a harder tier pays out more."
                                    FontSize="12"
                                    TextWrapping="Wrap"
                                    Opacity="0.75" />
@@ -389,6 +394,8 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="60" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
@@ -412,8 +419,25 @@
                                         <Button Grid.Column="3"
                                                 Content="Banish"
                                                 FontSize="11"
+                                                Margin="0,0,6,0"
                                                 Tag="{x:Bind HeroRef}"
                                                 Click="NemesisBanish_Click" />
+                                        <NumberBox Grid.Column="4"
+                                                   Value="{x:Bind Tier, Mode=TwoWay}"
+                                                   Minimum="1"
+                                                   Maximum="10"
+                                                   SmallChange="1"
+                                                   SpinButtonPlacementMode="Compact"
+                                                   IsEnabled="{x:Bind CanBountyHunt}"
+                                                   FontSize="11"
+                                                   Margin="0,0,6,0"
+                                                   ToolTipService.ToolTip="Bounty Hunt tier (1-10) — independent of this nemesis's own rank; higher tier = harder fight and bigger payout" />
+                                        <Button Grid.Column="5"
+                                                Content="Bounty Hunt"
+                                                FontSize="11"
+                                                IsEnabled="{x:Bind CanBountyHunt}"
+                                                Click="NemesisBountyHuntStart_Click"
+                                                ToolTipService.ToolTip="Warp to a random arena — this nemesis ambushes you there 30-60s after you arrive, at the tier selected" />
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
@@ -445,6 +469,7 @@
                     </StackPanel>
                 </Border>
             </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </Page>

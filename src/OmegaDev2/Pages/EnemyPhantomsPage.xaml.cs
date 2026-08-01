@@ -42,10 +42,24 @@ public sealed class NemesisRow
     public string Title { get; }
     public string Detail { get; }
     public string RankBadge { get; }
+    public bool Defeated { get; }
+
+    // Bounty Hunt tier (1-10) — ephemeral, independent of the nemesis's own
+    // persisted Rank (which stays capped at 5). Plain mutable property, not
+    // server data — the NumberBox in the row binds TwoWay directly into
+    // this, and BountyHuntStart_Click reads it back off the row at click
+    // time via the button's DataContext.
+    public int Tier { get; set; } = 5;
+
+    // Bounty Hunt is disabled for Defeated entries — mirrors SetBountyTarget's
+    // own server-side validation ("pick an active one") so the button
+    // doesn't invite a request that's guaranteed to fail.
+    public bool CanBountyHunt => Defeated == false;
 
     public NemesisRow(NemesisEntryDto e)
     {
         HeroRef = e.HeroRef ?? string.Empty;
+        Defeated = e.Defeated;
         string heroRefSafe = HeroRef;
         string niceHero = string.IsNullOrEmpty(e.HeroName)
             ? heroRefSafe
@@ -590,5 +604,25 @@ public sealed partial class EnemyPhantomsPage : Page
             await RefreshNemesisAsync();
         }
         catch (Exception ex) { NemesisStatusText.Text = $"error: {ex.Message}"; }
+    }
+
+    // ---------------- Bounty Hunt ----------------
+
+    private async void NemesisBountyHuntStart_Click(object sender, RoutedEventArgs e)
+    {
+        // Reads the row's own Tier via DataContext (not Tag, which only
+        // carries HeroRef for the other buttons) so the tier picker next to
+        // this button doesn't need a second round-trip to look up.
+        if ((sender as FrameworkElement)?.DataContext is not NemesisRow row) return;
+        var button = sender as Button;
+        if (button != null) button.IsEnabled = false;
+        try
+        {
+            _api.BaseUrl = AppState.ServerUrl;
+            var resp = await _api.PostNemesisBountyHuntStartAsync(TargetPlayer, row.HeroRef, row.Tier);
+            NemesisStatusText.Text = resp?.Message ?? resp?.Error ?? "no response";
+        }
+        catch (Exception ex) { NemesisStatusText.Text = $"error: {ex.Message}"; }
+        finally { if (button != null) button.IsEnabled = row.CanBountyHunt; }
     }
 }
