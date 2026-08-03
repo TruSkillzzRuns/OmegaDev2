@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -156,10 +157,21 @@ public sealed partial class BountyBoardPage : Page
 
     private BountyBoardFormula _formula = new();
     private bool _portraitSweepRunning;
+    private bool _refreshInFlight;
     private CancellationTokenSource? _pageCts = new();
+    private readonly DispatcherQueueTimer _timer;
 
     public BountyBoardPage()
     {
+        // Auto-refresh so a bounty defeated/lost in-game shows up here
+        // without a manual click — same "poll on a timer while the page is
+        // visible" pattern EnemyPhantomsPage uses for its live health bars,
+        // just on a slower cadence since board state only changes on a
+        // kill/loss event (30-60s+ after posting), not every second.
+        _timer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+        _timer.Interval = TimeSpan.FromSeconds(5);
+        _timer.Tick += async (_, _) => await RefreshAsync();
+
         InitializeComponent();
         BountyGrid.ItemsSource = ShownCards;
     }
@@ -169,10 +181,12 @@ public sealed partial class BountyBoardPage : Page
         base.OnNavigatedTo(e);
         _pageCts = new();
         _ = RefreshAsync();
+        _timer.Start();
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
+        _timer.Stop();
         _pageCts?.Cancel();
         base.OnNavigatedFrom(e);
     }
@@ -183,8 +197,19 @@ public sealed partial class BountyBoardPage : Page
 
     private async Task RefreshAsync()
     {
+        // Guards against the 5s auto-refresh timer overlapping a manual
+        // click or a just-finished Post/Collect action's own follow-up
+        // refresh — GetBountyBoardAsync isn't instant, and two in flight
+        // at once would just double the server hit for no benefit.
+        if (_refreshInFlight) return;
+        _refreshInFlight = true;
+
+        // Only show the "loading…" status on the very first load — once
+        // cards are already showing, a silent background refresh every 5s
+        // shouldn't flicker the status line away from whatever it's saying.
+        bool isBackgroundRefresh = _cards.Count > 0;
         RefreshBtn.IsEnabled = false;
-        StatusText.Text = "loading board…";
+        if (isBackgroundRefresh == false) StatusText.Text = "loading board…";
         try
         {
             _api.BaseUrl = AppState.ServerUrl;
@@ -226,7 +251,7 @@ public sealed partial class BountyBoardPage : Page
             _ = RunCurrencyIconSweepAsync(resp.CurrencyIcons);
         }
         catch (Exception ex) { StatusText.Text = $"error: {ex.Message}"; }
-        finally { RefreshBtn.IsEnabled = true; }
+        finally { RefreshBtn.IsEnabled = true; _refreshInFlight = false; }
     }
 
     private async Task RunPortraitSweepAsync()
