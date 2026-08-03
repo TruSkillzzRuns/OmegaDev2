@@ -437,6 +437,10 @@ public sealed class ServerApiClient : IDisposable
     public Task<PhantomOpResponse?> PostBountyBoardStartAsync(string playerName, int slotIndex, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/bountyboard", new { playerName, action = "start", slotIndex }, ct);
 
+    /// <summary>Claims a Defeated slot's currency reward (+ guaranteed BiS at rank 9-10, straight to inventory). See Player.BountyBoard.cs's CollectBountyBoardReward.</summary>
+    public Task<PhantomOpResponse?> PostBountyBoardCollectAsync(string playerName, int slotIndex, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/bountyboard", new { playerName, action = "collect", slotIndex }, ct);
+
     public Task<PhantomOpResponse?> PostWavesStartAsync(object body, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/arena/waves/start", body, ct);
 
@@ -783,6 +787,7 @@ public sealed class BountyBoardSlotDto
     public int LossCount { get; set; }
     public bool Defeated { get; set; }
     public bool Fled { get; set; }
+    public bool RewardCollected { get; set; }
     public int AcceptCost { get; set; }
     public string? PortraitPath { get; set; }
     public List<string>? PortraitCandidates { get; set; }

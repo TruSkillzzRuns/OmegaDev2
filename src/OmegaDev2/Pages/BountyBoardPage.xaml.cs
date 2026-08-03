@@ -47,8 +47,16 @@ public sealed class BountyBoardCard : INotifyPropertyChanged
     public int LossCount { get; }
     public bool Defeated { get; }
     public bool Fled { get; }
-    public bool Resolved => Defeated || Fled;
-    public bool CanPost => Resolved == false && CanAfford;
+    public bool RewardCollected { get; }
+
+    // A slot is only truly "done" (dimmed, no more actions) once it's Fled
+    // or its reward has actually been collected — a Defeated-but-uncollected
+    // slot stays fully visible so "go collect your reward" doesn't fade
+    // into the background.
+    public bool IsFullyDone => Fled || (Defeated && RewardCollected);
+    public bool Resolved => IsFullyDone;
+    public bool CanPost => Defeated == false && Fled == false && CanAfford;
+    public bool CanCollect => Defeated && RewardCollected == false;
 
     private readonly BountyBoardFormula _formula;
 
@@ -63,17 +71,27 @@ public sealed class BountyBoardCard : INotifyPropertyChanged
     public string AcceptCostText => $"{AcceptCost:N0}";
     public bool CanAfford => _formula.PlayerCredits >= AcceptCost;
 
-    public string StatusBadgeText => Defeated ? "DEFEATED" : Fled ? "FLED" : $"{LossCount}/{_formula.MaxLosses} LOSSES";
-    public Visibility StatusBadgeVisibility => Resolved || LossCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+    public string StatusBadgeText => RewardCollected ? "COLLECTED" : Defeated ? "DEFEATED — COLLECT REWARD" : Fled ? "FLED" : $"{LossCount}/{_formula.MaxLosses} LOSSES";
+    public Visibility StatusBadgeVisibility => Defeated || Fled || LossCount > 0 ? Visibility.Visible : Visibility.Collapsed;
     private static readonly Microsoft.UI.Xaml.Media.Brush s_defeatedBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0xFF, 0x55, 0x55, 0x60));
     private static readonly Microsoft.UI.Xaml.Media.Brush s_fledBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0xFF, 0xB0, 0x3A, 0x3A));
     private static readonly Microsoft.UI.Xaml.Media.Brush s_lossBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0xFF, 0x8A, 0x6D, 0x1A));
-    public Microsoft.UI.Xaml.Media.Brush StatusBadgeBrush => Defeated ? s_defeatedBrush : Fled ? s_fledBrush : s_lossBrush;
-    public double CardOpacity => Resolved ? 0.55 : 1.0;
-    public Visibility LossWarningVisibility => Resolved == false && LossCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+    private static readonly Microsoft.UI.Xaml.Media.Brush s_collectBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0xFF, 0xE0, 0xB8, 0x4B));
+    public Microsoft.UI.Xaml.Media.Brush StatusBadgeBrush => CanCollect ? s_collectBrush : RewardCollected ? s_defeatedBrush : Fled ? s_fledBrush : s_lossBrush;
+    public double CardOpacity => IsFullyDone ? 0.55 : 1.0;
+    public Visibility LossWarningVisibility => Defeated == false && Fled == false && LossCount > 0 ? Visibility.Visible : Visibility.Collapsed;
     public string LossWarningText => LossCount >= _formula.MaxLosses - 1
         ? "One more loss and this bounty flees for good!"
         : $"Lose {_formula.MaxLosses - LossCount} more time(s) and it flees.";
+
+    public string ActionLabel => Fled
+        ? "Bounty Fled"
+        : RewardCollected
+            ? "Reward Collected"
+            : Defeated
+                ? "Collect Rewards"
+                : (CanAfford ? "Post Bounty" : "Not Enough Credits");
+    public bool ActionEnabled => CanPost || CanCollect;
 
     public bool IsGuaranteedBis => Rank >= _formula.GuaranteedBisTier;
     public Visibility BisVisibility => IsGuaranteedBis ? Visibility.Visible : Visibility.Collapsed;
@@ -114,6 +132,7 @@ public sealed class BountyBoardCard : INotifyPropertyChanged
         LossCount = e.LossCount;
         Defeated = e.Defeated;
         Fled = e.Fled;
+        RewardCollected = e.RewardCollected;
         AcceptCost = e.AcceptCost;
         PortraitCandidates = e.PortraitCandidates;
 
@@ -303,27 +322,34 @@ public sealed partial class BountyBoardPage : Page
         catch { }
     }
 
+    // Same button, two actions depending on card state — Post Bounty
+    // (pay + warp) while active, Collect Rewards once Defeated. Never both
+    // at once (ActionEnabled/CanCollect are mutually exclusive with
+    // CanPost), so routing on card.CanCollect is unambiguous.
     private async void PostBounty_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.DataContext is not BountyBoardCard card) return;
         var button = sender as Button;
+        bool collecting = card.CanCollect;
         card.IsBusy = true;
         if (button != null) button.IsEnabled = false;
         try
         {
             _api.BaseUrl = AppState.ServerUrl;
-            var resp = await _api.PostBountyBoardStartAsync(TargetPlayer, card.SlotIndex);
+            var resp = collecting
+                ? await _api.PostBountyBoardCollectAsync(TargetPlayer, card.SlotIndex)
+                : await _api.PostBountyBoardStartAsync(TargetPlayer, card.SlotIndex);
             card.CardStatus = resp?.Message ?? resp?.Error ?? "no response";
-            // Credits were spent (or the attempt failed) either way —
-            // refresh so the toolbar balance and every card's affordability
-            // reflect the real post-spend total.
+            // Credits were spent / reward was granted (or the attempt
+            // failed) either way — refresh so the toolbar balance and
+            // every card's state reflect the real result.
             await RefreshAsync();
         }
         catch (Exception ex) { card.CardStatus = $"error: {ex.Message}"; }
         finally
         {
             card.IsBusy = false;
-            if (button != null) button.IsEnabled = card.CanPost;
+            if (button != null) button.IsEnabled = card.ActionEnabled;
         }
     }
 }

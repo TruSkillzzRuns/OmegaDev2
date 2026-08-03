@@ -202,14 +202,14 @@
                                         </StackPanel>
                                     </Border>
 
-                                    <Button Content="Post Bounty"
+                                    <Button Content="{x:Bind ActionLabel}"
                                             HorizontalAlignment="Stretch"
-                                            IsEnabled="{x:Bind CanPost}"
+                                            IsEnabled="{x:Bind ActionEnabled}"
                                             Background="{ThemeResource OmegaDev2.AccentGoldBrush}"
                                             Foreground="Black"
                                             FontWeight="SemiBold"
                                             Click="PostBounty_Click"
-                                            ToolTipService.ToolTip="Pay the accept cost, warp to a random arena — this bounty ambushes you there 30-60s after you arrive" />
+                                            ToolTipService.ToolTip="Defeated: claim the currency reward (+ guaranteed BiS at rank 9-10) straight to your inventory. Otherwise: pay the accept cost, warp to a random arena — this bounty ambushes you there 30-60s after you arrive" />
 
                                     <TextBlock Text="{x:Bind CardStatus, Mode=OneWay}"
                                                FontSize="10"
