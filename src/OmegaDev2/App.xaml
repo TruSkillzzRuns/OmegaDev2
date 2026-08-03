@@ -40,6 +40,8 @@
                     <!-- Alive-count / danger-value emphasis red. -->
                     <Color x:Key="OmegaDev2.DangerEmphasisColor">#FFE85C5C</Color>
                     <Color x:Key="OmegaDev2.MutedTextColor">#FF9CA3AF</Color>
+                    <!-- Bounty Board accent — bounty-poster gold. -->
+                    <Color x:Key="OmegaDev2.AccentGoldColor">#FFE0B84B</Color>
                 </ResourceDictionary>
 
                 <!-- LIGHT (matches OS light mode) -->
@@ -64,6 +66,8 @@
                          for AA contrast on white). -->
                     <Color x:Key="OmegaDev2.DangerEmphasisColor">#FFC53030</Color>
                     <Color x:Key="OmegaDev2.MutedTextColor">#FF6B7280</Color>
+                    <!-- Slightly deeper gold so it still reads on white. -->
+                    <Color x:Key="OmegaDev2.AccentGoldColor">#FFA9791A</Color>
                 </ResourceDictionary>
 
             </ResourceDictionary.ThemeDictionaries>
@@ -86,6 +90,7 @@
             <SolidColorBrush x:Key="OmegaDev2.TeamUpBadgeForegroundBrush" Color="{ThemeResource OmegaDev2.TeamUpBadgeForeground}" />
             <SolidColorBrush x:Key="OmegaDev2.DangerEmphasisBrush"   Color="{ThemeResource OmegaDev2.DangerEmphasisColor}" />
             <SolidColorBrush x:Key="OmegaDev2.MutedTextBrush"        Color="{ThemeResource OmegaDev2.MutedTextColor}" />
+            <SolidColorBrush x:Key="OmegaDev2.AccentGoldBrush"       Color="{ThemeResource OmegaDev2.AccentGoldColor}" />
 
             <!-- Backward-compat aliases so existing pages don't have to change. -->
             <SolidColorBrush x:Key="OmegaDev2.BgBrush"    Color="{ThemeResource OmegaDev2.PageBackgroundColor}" />

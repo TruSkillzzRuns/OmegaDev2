@@ -278,8 +278,13 @@
                 </Grid>
             </Border>
 
-            <!-- Spawn panel -->
-            <StackPanel Grid.Column="3" Spacing="12">
+            <!-- Spawn panel — wrapped in its own ScrollViewer since this
+                 column (Unleash + Rogue Encounter + Nemesis Roster, the
+                 latter now including Bounty Hunt) can outgrow a shorter
+                 window; the outer page Grid has no scroll of its own, so
+                 without this the bottom of the stack was unreachable. -->
+            <ScrollViewer Grid.Column="3" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
+            <StackPanel Spacing="12">
                 <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
                         CornerRadius="6"
                         Padding="12">
@@ -377,7 +382,7 @@
                                        Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
                             <Button Grid.Column="1" Content="Refresh" FontSize="11" Click="NemesisRefresh_Click" />
                         </Grid>
-                        <TextBlock Text="Phantoms that have killed you. Higher rank = tougher when they return in a Rogue Encounter. Kill them or banish to close the loop."
+                        <TextBlock Text="Phantoms that have killed you. Higher rank = tougher when they return in a Rogue Encounter. Kill them or banish to close the loop. Want to hunt one down on your terms? Use the Bounty Board."
                                    FontSize="12"
                                    TextWrapping="Wrap"
                                    Opacity="0.75" />
@@ -445,6 +450,7 @@
                     </StackPanel>
                 </Border>
             </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </Page>

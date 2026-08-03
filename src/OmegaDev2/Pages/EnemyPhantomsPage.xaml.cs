@@ -42,10 +42,12 @@ public sealed class NemesisRow
     public string Title { get; }
     public string Detail { get; }
     public string RankBadge { get; }
+    public bool Defeated { get; }
 
     public NemesisRow(NemesisEntryDto e)
     {
         HeroRef = e.HeroRef ?? string.Empty;
+        Defeated = e.Defeated;
         string heroRefSafe = HeroRef;
         string niceHero = string.IsNullOrEmpty(e.HeroName)
             ? heroRefSafe
@@ -591,4 +593,5 @@ public sealed partial class EnemyPhantomsPage : Page
         }
         catch (Exception ex) { NemesisStatusText.Text = $"error: {ex.Message}"; }
     }
+
 }

@@ -418,6 +418,29 @@ public sealed class ServerApiClient : IDisposable
     public Task<PhantomOpResponse?> PostNemesisSpawnNowAsync(string playerName, string heroRef, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/nemesis", new { playerName, action = "spawn", heroRef }, ct);
 
+    /// <summary>
+    /// Bounty Hunt — warps the player to a random arena; the target ambushes
+    /// them there 30-60s after arrival at the given tier (1-10, independent
+    /// of the nemesis's own persisted rank). Reward = the existing Bounty
+    /// Board table payout + tier-scaled currency (+ a guaranteed BiS piece
+    /// at tier 9-10). See Player.BountyHunt.cs server-side.
+    /// </summary>
+    public Task<PhantomOpResponse?> PostNemesisBountyHuntStartAsync(string playerName, string heroRef, int rank, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/nemesis", new { playerName, action = "bounty-hunt-start", heroRef, rank }, ct);
+
+    // ---- Bounty Board ----
+    // 6 randomly-rolled bounties shown at once, independent of the
+    // player's personal Nemesis roster. See Player.BountyBoard.cs.
+    public Task<BountyBoardResponse?> GetBountyBoardAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<BountyBoardResponse>($"webapi/phantoms/bountyboard?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
+    public Task<PhantomOpResponse?> PostBountyBoardStartAsync(string playerName, int slotIndex, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/bountyboard", new { playerName, action = "start", slotIndex }, ct);
+
+    /// <summary>Claims a Defeated slot's currency reward (+ guaranteed BiS at rank 9-10, straight to inventory). See Player.BountyBoard.cs's CollectBountyBoardReward.</summary>
+    public Task<PhantomOpResponse?> PostBountyBoardCollectAsync(string playerName, int slotIndex, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/bountyboard", new { playerName, action = "collect", slotIndex }, ct);
+
     public Task<PhantomOpResponse?> PostWavesStartAsync(object body, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/arena/waves/start", body, ct);
 
@@ -721,6 +744,67 @@ public sealed class NemesisListResponse
     public bool Ok { get; set; }
     public string? Error { get; set; }
     public List<NemesisEntryDto> Nemeses { get; set; } = new();
+
+    // Bounty Board pricing — raw per-tier rates plus the player's current
+    // balance, so the client can compute cost/reward live as the tier
+    // picker moves without round-tripping per tick. See
+    // Player.BountyHunt.cs (server-side source of truth these mirror).
+    public int PlayerCredits { get; set; }
+    public int BountyAcceptCostCreditsPerTier { get; set; }
+    public int BountyRewardEternitySplintersPerTier { get; set; }
+    public int BountyRewardCubeShardsPerTier { get; set; }
+    public int BountyRewardLegendaryMarksPerTier { get; set; }
+    public int BountyGuaranteedBisTier { get; set; }
+    public CurrencyIconsDto? CurrencyIcons { get; set; }
+}
+
+public sealed class CurrencyIconsDto
+{
+    public List<string>? Credits { get; set; }
+    public List<string>? EternitySplinters { get; set; }
+    public List<string>? CubeShards { get; set; }
+    public List<string>? LegendaryMarks { get; set; }
+}
+
+public sealed class BountyBoardResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public List<BountyBoardSlotDto> Slots { get; set; } = new();
+    public int PlayerCredits { get; set; }
+    /// <summary>Theme this board was rolled under, or null on an untheme(d)/legacy board.</summary>
+    public string? ThemeName { get; set; }
+    public string? ThemeFlavor { get; set; }
+    public int MaxLosses { get; set; }
+    public CurrencyIconsDto? CurrencyIcons { get; set; }
+    public int BountyRewardEternitySplintersPerTier { get; set; }
+    public int BountyRewardCubeShardsPerTier { get; set; }
+    public int BountyRewardLegendaryMarksPerTier { get; set; }
+    public int BountyGuaranteedBisTier { get; set; }
+}
+
+public sealed class BountyBoardSlotDto
+{
+    public int SlotIndex { get; set; }
+    public string HeroRef { get; set; } = string.Empty;
+    public string HeroName { get; set; } = string.Empty;
+    public bool IsBoss { get; set; }
+    public int Rank { get; set; }
+    public int LossCount { get; set; }
+    public bool Defeated { get; set; }
+    public bool Fled { get; set; }
+    public bool RewardCollected { get; set; }
+    public int AcceptCost { get; set; }
+    public string? PortraitPath { get; set; }
+    public List<string>? PortraitCandidates { get; set; }
+    /// <summary>Themed alias for this target under the current theme (e.g. "Angrir, Breaker of Souls"), or null.</summary>
+    public string? ThemedName { get; set; }
+    /// <summary>Costume the target will actually wear, or null when it has no themed costume.</summary>
+    public string? CostumeRef { get; set; }
+    /// <summary>Rank 9-10 nemesis slots: the exact BiS piece this bounty is guaranteed to drop.</summary>
+    public string? GuaranteedBisRef { get; set; }
+    public string? GuaranteedBisName { get; set; }
+    public List<string>? GuaranteedBisIconCandidates { get; set; }
 }
 
 public sealed class NemesisEntryDto
@@ -731,9 +815,13 @@ public sealed class NemesisEntryDto
     public int Kills { get; set; }
     public int RevengeKills { get; set; }
     public bool Defeated { get; set; }
+    public bool IsBoss { get; set; }
+    public int GrudgeScore { get; set; }
     public string LastKillerName { get; set; } = string.Empty;
     public string Suffix { get; set; } = string.Empty;
     public long LastKillMs { get; set; }
+    public string? PortraitPath { get; set; }
+    public List<string>? PortraitCandidates { get; set; }
 }
 
 public sealed class RogueEncounterStatusResponse
