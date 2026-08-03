@@ -13,19 +13,17 @@ using OmegaDev2.Services;
 
 namespace OmegaDev2.Pages;
 
-// Pricing formula the server sent for this refresh — pure numbers (plus
-// the icon set, once loaded) shared by every card on the board so each
-// one can recompute its own cost/reward as its tier picker moves without
-// a server round-trip. Mirrors (and is only ever sourced from)
-// Player.BountyHunt.cs's own constants.
-public sealed class BountyFormula
+// Shared display/icon state for the whole board — fetched once per
+// refresh, referenced by every card so cards don't each carry their own
+// copy of the reward-currency icons.
+public sealed class BountyBoardFormula
 {
-    public int AcceptCostPerTier;
+    public int PlayerCredits;
+    public int MaxLosses;
     public int EsPerTier;
     public int CsPerTier;
     public int LmPerTier;
     public int GuaranteedBisTier;
-    public int PlayerCredits;
 
     public BitmapImage? CreditsIcon;
     public BitmapImage? EsIcon;
@@ -33,71 +31,56 @@ public sealed class BountyFormula
     public BitmapImage? LmIcon;
 }
 
-// One bounty poster on the board. Wraps the same NemesisEntryDto the
-// Enemy Phantoms roster reads (this player's nemesis history) but with
-// its own tier state and per-card status text, since the board renders
-// every entry as an independent card rather than a table row.
-public sealed class BountyCard : INotifyPropertyChanged
+// One "WANTED" poster on the board — a slot the server rolled, not
+// something the player configures. Tier/cost/reward are read-only here;
+// only action is Post Bounty (pay AcceptCost, warp, get ambushed).
+public sealed class BountyBoardCard : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
     private void Raise([CallerMemberName] string? n = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
 
+    public int SlotIndex { get; }
     public string HeroRef { get; }
     public string Title { get; }
     public string Detail { get; }
+    public int Rank { get; }
+    public int LossCount { get; }
     public bool Defeated { get; }
-    public Visibility DefeatedVisibility => Defeated ? Visibility.Visible : Visibility.Collapsed;
+    public bool Fled { get; }
+    public bool Resolved => Defeated || Fled;
+    public bool CanPost => Resolved == false && CanAfford;
 
-    // Bounty Hunt is disabled for defeated entries — same rule the old
-    // Enemy Phantoms roster panel used, mirroring SetBountyTarget's own
-    // server-side validation ("pick an active one") — plus, new here,
-    // disabled when the player can't afford this tier's accept cost.
-    public bool CanBountyHunt => Defeated == false && CanAfford;
-
-    // Separate from CanBountyHunt (which also folds in affordability) —
-    // the tier picker itself should stay editable even when the player is
-    // temporarily short on credits, only the Post Bounty button locks.
-    public bool CanEditTier => Defeated == false;
-
-    private readonly BountyFormula _formula;
-
-    private int _tier = 5;
-    public int Tier
-    {
-        get => _tier;
-        set
-        {
-            if (_tier == value) return;
-            _tier = value;
-            Raise(); Raise(nameof(TierLabel)); Raise(nameof(AcceptCostText)); Raise(nameof(RewardText));
-            Raise(nameof(IsGuaranteedBis)); Raise(nameof(BisVisibility)); Raise(nameof(CanAfford)); Raise(nameof(CanBountyHunt));
-            Raise(nameof(PostBountyLabel));
-        }
-    }
+    private readonly BountyBoardFormula _formula;
 
     private static readonly string[] s_tierNames =
     {
         "Trivial", "Easy", "Easy", "Moderate", "Moderate",
         "Hard", "Hard", "Brutal", "Brutal", "Legendary"
     };
-    public string TierLabel => $"TIER {Tier} — {s_tierNames[Math.Clamp(Tier, 1, 10) - 1]}";
+    public string TierLabel => $"RANK {Rank} — {s_tierNames[Math.Clamp(Rank, 1, 10) - 1]}";
 
-    public int AcceptCost => _formula.AcceptCostPerTier * Tier;
+    public int AcceptCost { get; }
     public string AcceptCostText => $"{AcceptCost:N0}";
     public bool CanAfford => _formula.PlayerCredits >= AcceptCost;
-    public string PostBountyLabel => CanAfford ? "Post Bounty" : "Not Enough Credits";
 
-    public bool IsGuaranteedBis => Tier >= _formula.GuaranteedBisTier;
+    public string StatusBadgeText => Defeated ? "DEFEATED" : Fled ? "FLED" : $"{LossCount}/{_formula.MaxLosses} LOSSES";
+    public Visibility StatusBadgeVisibility => Resolved || LossCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+    private static readonly Microsoft.UI.Xaml.Media.Brush s_defeatedBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0xFF, 0x55, 0x55, 0x60));
+    private static readonly Microsoft.UI.Xaml.Media.Brush s_fledBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0xFF, 0xB0, 0x3A, 0x3A));
+    private static readonly Microsoft.UI.Xaml.Media.Brush s_lossBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0xFF, 0x8A, 0x6D, 0x1A));
+    public Microsoft.UI.Xaml.Media.Brush StatusBadgeBrush => Defeated ? s_defeatedBrush : Fled ? s_fledBrush : s_lossBrush;
+    public double CardOpacity => Resolved ? 0.55 : 1.0;
+    public Visibility LossWarningVisibility => Resolved == false && LossCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+    public string LossWarningText => LossCount >= _formula.MaxLosses - 1
+        ? "One more loss and this bounty flees for good!"
+        : $"Lose {_formula.MaxLosses - LossCount} more time(s) and it flees.";
+
+    public bool IsGuaranteedBis => Rank >= _formula.GuaranteedBisTier;
     public Visibility BisVisibility => IsGuaranteedBis ? Visibility.Visible : Visibility.Collapsed;
-    public string EsRewardText => $"{_formula.EsPerTier * Tier:N0}";
-    public string CsRewardText => $"{_formula.CsPerTier * Tier:N0}";
-    public string LmRewardText => $"{_formula.LmPerTier * Tier:N0}";
-    public string RewardText => $"{EsRewardText} Eternity Splinters · {CsRewardText} Cube Shards · {LmRewardText} Legendary Marks";
+    public string EsRewardText => $"{_formula.EsPerTier * Rank:N0}";
+    public string CsRewardText => $"{_formula.CsPerTier * Rank:N0}";
+    public string LmRewardText => $"{_formula.LmPerTier * Rank:N0}";
 
-    // Icons are shared per-formula (one fetch for the whole board), so
-    // these just forward to it — RaiseIconsChanged() is called once the
-    // sweep resolves them, since the forward alone won't trip WinUI's
-    // change detection.
     public BitmapImage? CreditsIcon => _formula.CreditsIcon;
     public BitmapImage? EsIcon => _formula.EsIcon;
     public BitmapImage? CsIcon => _formula.CsIcon;
@@ -106,6 +89,10 @@ public sealed class BountyCard : INotifyPropertyChanged
     {
         Raise(nameof(CreditsIcon)); Raise(nameof(EsIcon)); Raise(nameof(CsIcon)); Raise(nameof(LmIcon));
     }
+    public void RaiseAffordabilityChanged()
+    {
+        Raise(nameof(CanAfford)); Raise(nameof(CanPost));
+    }
 
     private string _cardStatus = "";
     public string CardStatus { get => _cardStatus; set { _cardStatus = value; Raise(); } }
@@ -113,48 +100,42 @@ public sealed class BountyCard : INotifyPropertyChanged
     private bool _isBusy;
     public bool IsBusy { get => _isBusy; set { _isBusy = value; Raise(); } }
 
-    // Portrait — resolved server-side from the same AvatarPrototype /
-    // AgentPrototype the Enemy Phantoms roster's own portrait sweep reads,
-    // just keyed straight off this entry's HeroRef instead of a name match.
     private BitmapImage? _portrait;
     public BitmapImage? Portrait { get => _portrait; set { _portrait = value; Raise(); } }
     public bool PortraitRequested;
     public System.Collections.Generic.List<string>? PortraitCandidates { get; }
 
-    public BountyCard(NemesisEntryDto e, BountyFormula formula)
+    public BountyBoardCard(BountyBoardSlotDto e, BountyBoardFormula formula)
     {
         _formula = formula;
+        SlotIndex = e.SlotIndex;
         HeroRef = e.HeroRef ?? string.Empty;
+        Rank = e.Rank;
+        LossCount = e.LossCount;
         Defeated = e.Defeated;
+        Fled = e.Fled;
+        AcceptCost = e.AcceptCost;
         PortraitCandidates = e.PortraitCandidates;
 
-        string niceHero = string.IsNullOrEmpty(e.HeroName)
-            ? HeroRef
-            : e.HeroName.Split('/').Last();
-        string suffix = string.IsNullOrEmpty(e.Suffix) ? "" : " " + e.Suffix;
-        int safeRank = Math.Clamp(e.Rank, 0, 5);
-        string stars = safeRank > 0 ? new string('★', safeRank) : "";
-
-        string baseTitle = string.IsNullOrEmpty(e.LastKillerName) ? niceHero : e.LastKillerName;
-        Title = $"{stars} {baseTitle}{suffix}".Trim();
-
-        string revenge = e.RevengeKills > 0 ? $"  ·  your revenge {e.RevengeKills}" : "";
-        Detail = $"{niceHero}  ·  {(e.IsBoss ? "boss" : "nemesis")}  ·  their kills {e.Kills}{revenge}";
+        string niceHero = string.IsNullOrEmpty(e.HeroName) ? HeroRef : e.HeroName.Split('/').Last();
+        Title = niceHero;
+        Detail = e.IsBoss ? "boss" : "nemesis";
     }
 }
 
-// Bounty Board — a standalone tool separate from the Enemy Phantoms
-// roster panel it grew out of. Pick a nemesis, set a tier (1-10), post
-// the bounty (pays a credits deposit up front); the player warps to a
-// random Trial-of-the-Impossible arena and the chosen nemesis ambushes
-// them there.
+// Bounty Board — 6 randomly-rolled bounties shown at once, independent of
+// the player's personal Nemesis roster/kill history. Post a bounty (pays
+// its rank-scaled Credits cost), warp to a random arena, get ambushed
+// 30-60s after arrival. Losing ranks the bounty up (tougher next time);
+// the 3rd loss to the same bounty makes it flee for good. Once every slot
+// is resolved (defeated or fled) the whole board rerolls.
 public sealed partial class BountyBoardPage : Page
 {
     private readonly ServerApiClient _api = new();
-    private readonly System.Collections.Generic.List<BountyCard> _allCards = new();
-    public ObservableCollection<BountyCard> ShownCards { get; } = new();
+    private readonly System.Collections.Generic.List<BountyBoardCard> _cards = new();
+    public ObservableCollection<BountyBoardCard> ShownCards { get; } = new();
 
-    private BountyFormula _formula = new();
+    private BountyBoardFormula _formula = new();
     private bool _portraitSweepRunning;
     private CancellationTokenSource? _pageCts = new();
 
@@ -188,23 +169,22 @@ public sealed partial class BountyBoardPage : Page
         try
         {
             _api.BaseUrl = AppState.ServerUrl;
-            var resp = await _api.GetNemesisListAsync(TargetPlayer);
+            var resp = await _api.GetBountyBoardAsync(TargetPlayer);
             if (resp == null || resp.Ok == false)
             {
                 StatusText.Text = resp?.Error ?? "bounty board load failed";
                 return;
             }
 
-            // Reuse the icons we've already fetched this session (they
-            // never change), only the numbers refresh every call.
-            _formula = new BountyFormula
+            _formula = new BountyBoardFormula
             {
-                AcceptCostPerTier = resp.BountyAcceptCostCreditsPerTier,
+                PlayerCredits = resp.PlayerCredits,
+                MaxLosses = resp.MaxLosses,
                 EsPerTier = resp.BountyRewardEternitySplintersPerTier,
                 CsPerTier = resp.BountyRewardCubeShardsPerTier,
                 LmPerTier = resp.BountyRewardLegendaryMarksPerTier,
                 GuaranteedBisTier = resp.BountyGuaranteedBisTier,
-                PlayerCredits = resp.PlayerCredits,
+                // Icons never change within a session — carry forward.
                 CreditsIcon = _formula.CreditsIcon,
                 EsIcon = _formula.EsIcon,
                 CsIcon = _formula.CsIcon,
@@ -212,14 +192,16 @@ public sealed partial class BountyBoardPage : Page
             };
             CreditsBalanceText.Text = $"You have {resp.PlayerCredits:N0} credits";
 
-            _allCards.Clear();
-            foreach (var n in resp.Nemeses) _allCards.Add(new BountyCard(n, _formula));
-            ApplyFilter();
+            _cards.Clear();
+            foreach (var slot in resp.Slots.OrderBy(s => s.SlotIndex))
+                _cards.Add(new BountyBoardCard(slot, _formula));
+            ShownCards.Clear();
+            foreach (var c in _cards) ShownCards.Add(c);
 
-            int active = _allCards.Count(c => c.Defeated == false);
-            StatusText.Text = _allCards.Count == 0
-                ? "no nemeses yet — die to an enemy phantom to earn a spot on the board"
-                : $"{active} bounties available  ·  {_allCards.Count} total";
+            int active = _cards.Count(c => c.Resolved == false);
+            int defeated = _cards.Count(c => c.Defeated);
+            int fled = _cards.Count(c => c.Fled);
+            StatusText.Text = $"{active} active  ·  {defeated} defeated  ·  {fled} fled";
 
             _ = RunPortraitSweepAsync();
             _ = RunCurrencyIconSweepAsync(resp.CurrencyIcons);
@@ -228,27 +210,6 @@ public sealed partial class BountyBoardPage : Page
         finally { RefreshBtn.IsEnabled = true; }
     }
 
-    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyFilter();
-
-    private void ShowDefeatedSwitch_Toggled(object sender, RoutedEventArgs e) => ApplyFilter();
-
-    private void ApplyFilter()
-    {
-        string q = SearchBox.Text?.Trim() ?? "";
-        bool showDefeated = ShowDefeatedSwitch.IsOn;
-        ShownCards.Clear();
-        foreach (var card in _allCards)
-        {
-            if (card.Defeated && showDefeated == false) continue;
-            if (q.Length > 0 && card.Title.Contains(q, StringComparison.OrdinalIgnoreCase) == false) continue;
-            ShownCards.Add(card);
-        }
-    }
-
-    // Same "warm the server cache via a byte fetch, then decode straight
-    // from the /webapi/texbyname URI" pattern Enemy Phantoms uses for its
-    // hero/boss rosters — just keyed off the candidates the server already
-    // resolved for us per nemesis, no name lookup needed here.
     private async Task RunPortraitSweepAsync()
     {
         if (_portraitSweepRunning) return;
@@ -259,7 +220,7 @@ public sealed partial class BountyBoardPage : Page
             string portraitBase = AppState.ServerUrl.TrimEnd('/');
             using var throttle = new SemaphoreSlim(8);
             var tasks = new System.Collections.Generic.List<Task>();
-            foreach (var card in _allCards)
+            foreach (var card in _cards)
             {
                 var candidates = card.PortraitCandidates;
                 if (card.PortraitRequested || candidates is not { Count: > 0 }) continue;
@@ -293,10 +254,6 @@ public sealed partial class BountyBoardPage : Page
         finally { _portraitSweepRunning = false; }
     }
 
-    // Currency icons (Credits for the accept cost, ES/CS/LM for the
-    // reward line) are the same for every card and never change within a
-    // session — fetched once into the shared BountyFormula, then every
-    // existing card is told to re-pull them via RaiseIconsChanged().
     private async Task RunCurrencyIconSweepAsync(CurrencyIconsDto? icons)
     {
         if (icons == null) return;
@@ -340,39 +297,33 @@ public sealed partial class BountyBoardPage : Page
                 if (cs != null) _formula.CsIcon = cs;
                 if (lm != null) _formula.LmIcon = lm;
                 CreditsIconImage.Source = _formula.CreditsIcon;
-                foreach (var card in _allCards) card.RaiseIconsChanged();
+                foreach (var card in _cards) card.RaiseIconsChanged();
             });
         }
         catch { }
     }
 
-    private void TierNumberBox_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
-    {
-        // x:Bind already keeps BountyCard.Tier in sync (TwoWay) and Tier's
-        // own setter raises every derived property — nothing else to do.
-    }
-
     private async void PostBounty_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.DataContext is not BountyCard card) return;
+        if ((sender as FrameworkElement)?.DataContext is not BountyBoardCard card) return;
         var button = sender as Button;
         card.IsBusy = true;
         if (button != null) button.IsEnabled = false;
         try
         {
             _api.BaseUrl = AppState.ServerUrl;
-            var resp = await _api.PostNemesisBountyHuntStartAsync(TargetPlayer, card.HeroRef, card.Tier);
+            var resp = await _api.PostBountyBoardStartAsync(TargetPlayer, card.SlotIndex);
             card.CardStatus = resp?.Message ?? resp?.Error ?? "no response";
-            // Credits were spent server-side (or the attempt failed) either
-            // way — refresh so the toolbar balance and every card's
-            // CanAfford reflect the real post-spend total.
+            // Credits were spent (or the attempt failed) either way —
+            // refresh so the toolbar balance and every card's affordability
+            // reflect the real post-spend total.
             await RefreshAsync();
         }
         catch (Exception ex) { card.CardStatus = $"error: {ex.Message}"; }
         finally
         {
             card.IsBusy = false;
-            if (button != null) button.IsEnabled = card.CanBountyHunt;
+            if (button != null) button.IsEnabled = card.CanPost;
         }
     }
 }

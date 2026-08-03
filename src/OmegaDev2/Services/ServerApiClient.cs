@@ -428,6 +428,15 @@ public sealed class ServerApiClient : IDisposable
     public Task<PhantomOpResponse?> PostNemesisBountyHuntStartAsync(string playerName, string heroRef, int rank, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/nemesis", new { playerName, action = "bounty-hunt-start", heroRef, rank }, ct);
 
+    // ---- Bounty Board ----
+    // 6 randomly-rolled bounties shown at once, independent of the
+    // player's personal Nemesis roster. See Player.BountyBoard.cs.
+    public Task<BountyBoardResponse?> GetBountyBoardAsync(string player, CancellationToken ct = default)
+        => GetJsonAsync<BountyBoardResponse>($"webapi/phantoms/bountyboard?player={Uri.EscapeDataString(player ?? "*")}", ct);
+
+    public Task<PhantomOpResponse?> PostBountyBoardStartAsync(string playerName, int slotIndex, CancellationToken ct = default)
+        => PostJsonAsync<PhantomOpResponse>("webapi/phantoms/bountyboard", new { playerName, action = "start", slotIndex }, ct);
+
     public Task<PhantomOpResponse?> PostWavesStartAsync(object body, CancellationToken ct = default)
         => PostJsonAsync<PhantomOpResponse>("webapi/arena/waves/start", body, ct);
 
@@ -748,6 +757,35 @@ public sealed class CurrencyIconsDto
     public List<string>? EternitySplinters { get; set; }
     public List<string>? CubeShards { get; set; }
     public List<string>? LegendaryMarks { get; set; }
+}
+
+public sealed class BountyBoardResponse
+{
+    public bool Ok { get; set; }
+    public string? Error { get; set; }
+    public List<BountyBoardSlotDto> Slots { get; set; } = new();
+    public int PlayerCredits { get; set; }
+    public int MaxLosses { get; set; }
+    public CurrencyIconsDto? CurrencyIcons { get; set; }
+    public int BountyRewardEternitySplintersPerTier { get; set; }
+    public int BountyRewardCubeShardsPerTier { get; set; }
+    public int BountyRewardLegendaryMarksPerTier { get; set; }
+    public int BountyGuaranteedBisTier { get; set; }
+}
+
+public sealed class BountyBoardSlotDto
+{
+    public int SlotIndex { get; set; }
+    public string HeroRef { get; set; } = string.Empty;
+    public string HeroName { get; set; } = string.Empty;
+    public bool IsBoss { get; set; }
+    public int Rank { get; set; }
+    public int LossCount { get; set; }
+    public bool Defeated { get; set; }
+    public bool Fled { get; set; }
+    public int AcceptCost { get; set; }
+    public string? PortraitPath { get; set; }
+    public List<string>? PortraitCandidates { get; set; }
 }
 
 public sealed class NemesisEntryDto
