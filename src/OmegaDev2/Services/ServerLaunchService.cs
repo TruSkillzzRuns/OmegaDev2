@@ -129,7 +129,7 @@ public static class ServerLaunchService
             }
         }
 
-        EnsureApacheRunning(repoDir);
+        string apacheStatus = EnsureApacheRunning(repoDir);
 
         try
         {
@@ -147,7 +147,7 @@ public static class ServerLaunchService
             // (and anyone still using the .bat scripts by hand) stays consistent.
             File.WriteAllText(PidFilePathFor(repoDir, versionTag), proc.Id.ToString());
 
-            return new LaunchResult { Ok = true, Message = $"Started {versionTag} server (PID {proc.Id})." };
+            return new LaunchResult { Ok = true, Message = $"Started {versionTag} server (PID {proc.Id}). {apacheStatus}" };
         }
         catch (Exception ex)
         {
@@ -244,19 +244,22 @@ public static class ServerLaunchService
     // Apache serves SiteConfig*.xml on port 80 and proxies /AuthServer to each
     // server's WebFrontend -- shared single instance regardless of which
     // server version(s) are running. Best-effort: if Apache isn't set up
-    // under the repo folder, silently skip (same as the .bat scripts'
-    // "Apache not found" branch) rather than fail the server launch over it.
-    private static void EnsureApacheRunning(string repoDir)
+    // under the repo folder, skip without failing the server launch over it.
+    // Every branch now returns a status string -- this used to be totally
+    // silent (no branch fed into the returned LaunchResult message), so
+    // "did Apache actually start" was invisible from the UI even though the
+    // logic was already correct.
+    private static string EnsureApacheRunning(string repoDir)
     {
         try
         {
             if (Process.GetProcessesByName("httpd").Length > 0)
-                return;
+                return "Apache already running.";
 
             string apacheRoot = Path.Combine(repoDir, "Apache24");
             string apacheExe = Path.Combine(apacheRoot, "bin", "httpd.exe");
             if (File.Exists(apacheExe) == false)
-                return;
+                return $"Apache not found at {apacheExe} -- skipped.";
 
             // UseShellExecute must be false to set EnvironmentVariables on
             // Windows (throws InvalidOperationException otherwise).
@@ -268,13 +271,15 @@ public static class ServerLaunchService
                 WindowStyle = ProcessWindowStyle.Minimized,
             };
             psi.EnvironmentVariables["APACHE_SERVER_ROOT"] = apacheRoot;
-            Process.Start(psi);
+            var proc = Process.Start(psi);
+            return proc != null ? "Apache started." : "Apache failed to start (Process.Start returned null).";
         }
-        catch
+        catch (Exception ex)
         {
             // Best-effort only -- a server without Apache still runs, it just
             // means the client can't fetch SiteConfig, which the client-launch
             // step (or a manual retry) will surface on its own.
+            return $"Apache failed to start: {ex.Message}";
         }
     }
 }

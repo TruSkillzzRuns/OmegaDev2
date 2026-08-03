@@ -136,8 +136,12 @@
                                     BorderThickness="0,0,0,3"
                                     BorderBrush="{x:Bind CategoryBrush}"
                                     Background="{ThemeResource OmegaDev2.PageBackgroundBrush}"
-                                    Padding="12,10"
-                                    ToolTipService.ToolTip="{x:Bind Path}">
+                                    Padding="12,10">
+                                <ToolTipService.ToolTip>
+                                    <ToolTip MaxWidth="360">
+                                        <TextBlock Text="{x:Bind Path}" TextWrapping="Wrap" />
+                                    </ToolTip>
+                                </ToolTipService.ToolTip>
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto" />
