@@ -31,6 +31,7 @@
                            TextWrapping="Wrap"
                            MaxWidth="960"
                            Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+
             </StackPanel>
 
             <controls:ServerVersionPicker Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top" />
@@ -74,7 +75,7 @@
                           Padding="10">
                     <GridView.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="0" />
+                            <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="0" ItemHeight="648" ItemWidth="378" />
                         </ItemsPanelTemplate>
                     </GridView.ItemsPanel>
                     <GridView.ItemTemplate>
@@ -145,7 +146,8 @@
                                     <TextBlock Text="{x:Bind LossWarningText}"
                                                FontSize="11"
                                                TextWrapping="Wrap"
-                                               Visibility="{x:Bind LossWarningVisibility}"
+                                               MinHeight="30"
+                                               Opacity="{x:Bind LossWarningOpacity}"
                                                Foreground="{ThemeResource OmegaDev2.DangerEmphasisBrush}" />
 
                                     <!-- Cost to accept -->
@@ -191,14 +193,39 @@
                                                     <TextBlock Text="{x:Bind LmRewardText}" FontSize="13" VerticalAlignment="Center" />
                                                 </StackPanel>
                                             </StackPanel>
-                                            <Border Background="{ThemeResource OmegaDev2.AccentGoldBrush}"
-                                                    CornerRadius="4"
-                                                    Padding="6,2"
-                                                    HorizontalAlignment="Left"
-                                                    Visibility="{x:Bind BisVisibility}"
-                                                    ToolTipService.ToolTip="This rank guarantees one best-in-slot item drop for your current hero on kill">
-                                                <TextBlock Text="GUARANTEED BiS" FontSize="10" FontWeight="SemiBold" Foreground="Black" />
-                                            </Border>
+                                            <StackPanel Orientation="Horizontal"
+                                                        Spacing="6"
+                                                        MinHeight="60"
+                                                        Opacity="{x:Bind BisOpacity}"
+                                                        ToolTipService.ToolTip="{x:Bind BisTooltip}">
+                                                <Border Width="52" Height="52"
+                                                        CornerRadius="6"
+                                                        Padding="2"
+                                                        Background="{ThemeResource OmegaDev2.PageBackgroundBrush}"
+                                                        BorderThickness="1"
+                                                        BorderBrush="{ThemeResource OmegaDev2.AccentGoldBrush}">
+                                                    <Image Source="{x:Bind BisIcon, Mode=OneWay}" Stretch="Uniform" />
+                                                </Border>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="GUARANTEED DROP"
+                                                               FontSize="9"
+                                                               FontWeight="SemiBold"
+                                                               CharacterSpacing="140"
+                                                               Foreground="{ThemeResource OmegaDev2.AccentGoldBrush}" />
+                                                    <!-- Real in-game names run long ("Cosmically Enhanced Arc
+                                                         Reactor"), so wrap to two lines instead of trimming at
+                                                         one. Card content width is 320 (352 - 2x16 padding)
+                                                         minus the 52 icon and 6 spacing = 262 usable. -->
+                                                    <TextBlock Text="{x:Bind BisItemLabel, Mode=OneWay}"
+                                                               FontSize="11"
+                                                               TextWrapping="Wrap"
+                                                               MaxLines="2"
+                                                               LineHeight="14"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               MaxWidth="258"
+                                                               Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                                                </StackPanel>
+                                            </StackPanel>
                                         </StackPanel>
                                     </Border>
 

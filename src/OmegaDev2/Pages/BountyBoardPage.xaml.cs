@@ -81,6 +81,8 @@ public sealed class BountyBoardCard : INotifyPropertyChanged
     public Microsoft.UI.Xaml.Media.Brush StatusBadgeBrush => CanCollect ? s_collectBrush : RewardCollected ? s_defeatedBrush : Fled ? s_fledBrush : s_lossBrush;
     public double CardOpacity => IsFullyDone ? 0.55 : 1.0;
     public Visibility LossWarningVisibility => Defeated == false && Fled == false && LossCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+    /// <summary>The warning always reserves its line so cards stay a uniform height; it is faded out rather than collapsed.</summary>
+    public double LossWarningOpacity => LossWarningVisibility == Visibility.Visible ? 1.0 : 0.0;
     public string LossWarningText => LossCount >= _formula.MaxLosses - 1
         ? "One more loss and this bounty flees for good!"
         : $"Lose {_formula.MaxLosses - LossCount} more time(s) and it flees.";
@@ -96,6 +98,17 @@ public sealed class BountyBoardCard : INotifyPropertyChanged
 
     public bool IsGuaranteedBis => Rank >= _formula.GuaranteedBisTier;
     public Visibility BisVisibility => IsGuaranteedBis ? Visibility.Visible : Visibility.Collapsed;
+    /// <summary>Row is always present (uniform card height) and faded out when this rank has no guaranteed drop.</summary>
+    public double BisOpacity => IsGuaranteedBis ? 1.0 : 0.0;
+    public string BisItemLabel => string.IsNullOrEmpty(GuaranteedBisName) ? "best-in-slot item" : GuaranteedBisName!;
+    public string BisTooltip => string.IsNullOrEmpty(GuaranteedBisName)
+        ? "This rank guarantees one best-in-slot item drop on kill"
+        : $"Defeating this bounty is guaranteed to drop {GuaranteedBisName}";
+    /// <summary>Name of the exact BiS piece this bounty will drop (rank 9-10 nemesis slots only).</summary>
+    public string? GuaranteedBisName { get; }
+    public System.Collections.Generic.List<string>? GuaranteedBisIconCandidates { get; }
+    private BitmapImage? _bisIcon;
+    public BitmapImage? BisIcon { get => _bisIcon; set { _bisIcon = value; Raise(); } }
     public string EsRewardText => $"{_formula.EsPerTier * Rank:N0}";
     public string CsRewardText => $"{_formula.CsPerTier * Rank:N0}";
     public string LmRewardText => $"{_formula.LmPerTier * Rank:N0}";
@@ -136,10 +149,25 @@ public sealed class BountyBoardCard : INotifyPropertyChanged
         RewardCollected = e.RewardCollected;
         AcceptCost = e.AcceptCost;
         PortraitCandidates = e.PortraitCandidates;
+        GuaranteedBisName = e.GuaranteedBisName;
+        GuaranteedBisIconCandidates = e.GuaranteedBisIconCandidates;
 
         string niceHero = string.IsNullOrEmpty(e.HeroName) ? HeroRef : e.HeroName.Split('/').Last();
-        Title = niceHero;
-        Detail = e.IsBoss ? "boss" : "nemesis";
+        string kind = e.IsBoss ? "boss" : "nemesis";
+
+        // Themed boards rename the target (Thing wearing FearItself IS
+        // Angrir). Lead with the themed name and keep the real hero name in
+        // the subtitle so it's still obvious who you're actually fighting.
+        if (string.IsNullOrWhiteSpace(e.ThemedName) == false)
+        {
+            Title = e.ThemedName!;
+            Detail = $"{niceHero} · {kind}";
+        }
+        else
+        {
+            Title = niceHero;
+            Detail = kind;
+        }
     }
 }
 
@@ -269,6 +297,7 @@ public sealed partial class BountyBoardPage : Page
                 var candidates = card.PortraitCandidates;
                 if (card.PortraitRequested || candidates is not { Count: > 0 }) continue;
                 card.PortraitRequested = true;
+                var bisCandidates = card.GuaranteedBisIconCandidates;
                 await throttle.WaitAsync(ct);
                 tasks.Add(Task.Run(async () =>
                 {
@@ -285,6 +314,24 @@ public sealed partial class BountyBoardPage : Page
                                 catch { }
                             });
                             break;
+                        }
+
+                        // Same pass resolves the guaranteed-BiS item icon for
+                        // rank 9-10 nemesis slots (null/empty everywhere else).
+                        if (bisCandidates is { Count: > 0 })
+                        {
+                            foreach (string candidate in bisCandidates)
+                            {
+                                byte[]? png = await _api.GetTexturePngAsync(candidate, ct);
+                                if (png == null || png.Length == 0) continue;
+                                string url = $"{portraitBase}/webapi/texbyname?name={Uri.EscapeDataString(candidate)}";
+                                DispatcherQueue.TryEnqueue(() =>
+                                {
+                                    try { card.BisIcon = new BitmapImage(new Uri(url)) { DecodePixelWidth = 104 }; }
+                                    catch { }
+                                });
+                                break;
+                            }
                         }
                     }
                     catch { }

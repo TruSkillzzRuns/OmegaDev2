@@ -769,6 +769,9 @@ public sealed class BountyBoardResponse
     public string? Error { get; set; }
     public List<BountyBoardSlotDto> Slots { get; set; } = new();
     public int PlayerCredits { get; set; }
+    /// <summary>Theme this board was rolled under, or null on an untheme(d)/legacy board.</summary>
+    public string? ThemeName { get; set; }
+    public string? ThemeFlavor { get; set; }
     public int MaxLosses { get; set; }
     public CurrencyIconsDto? CurrencyIcons { get; set; }
     public int BountyRewardEternitySplintersPerTier { get; set; }
@@ -791,6 +794,14 @@ public sealed class BountyBoardSlotDto
     public int AcceptCost { get; set; }
     public string? PortraitPath { get; set; }
     public List<string>? PortraitCandidates { get; set; }
+    /// <summary>Themed alias for this target under the current theme (e.g. "Angrir, Breaker of Souls"), or null.</summary>
+    public string? ThemedName { get; set; }
+    /// <summary>Costume the target will actually wear, or null when it has no themed costume.</summary>
+    public string? CostumeRef { get; set; }
+    /// <summary>Rank 9-10 nemesis slots: the exact BiS piece this bounty is guaranteed to drop.</summary>
+    public string? GuaranteedBisRef { get; set; }
+    public string? GuaranteedBisName { get; set; }
+    public List<string>? GuaranteedBisIconCandidates { get; set; }
 }
 
 public sealed class NemesisEntryDto
