@@ -728,6 +728,26 @@ public sealed class NemesisListResponse
     public bool Ok { get; set; }
     public string? Error { get; set; }
     public List<NemesisEntryDto> Nemeses { get; set; } = new();
+
+    // Bounty Board pricing — raw per-tier rates plus the player's current
+    // balance, so the client can compute cost/reward live as the tier
+    // picker moves without round-tripping per tick. See
+    // Player.BountyHunt.cs (server-side source of truth these mirror).
+    public int PlayerCredits { get; set; }
+    public int BountyAcceptCostCreditsPerTier { get; set; }
+    public int BountyRewardEternitySplintersPerTier { get; set; }
+    public int BountyRewardCubeShardsPerTier { get; set; }
+    public int BountyRewardLegendaryMarksPerTier { get; set; }
+    public int BountyGuaranteedBisTier { get; set; }
+    public CurrencyIconsDto? CurrencyIcons { get; set; }
+}
+
+public sealed class CurrencyIconsDto
+{
+    public List<string>? Credits { get; set; }
+    public List<string>? EternitySplinters { get; set; }
+    public List<string>? CubeShards { get; set; }
+    public List<string>? LegendaryMarks { get; set; }
 }
 
 public sealed class NemesisEntryDto
@@ -743,6 +763,8 @@ public sealed class NemesisEntryDto
     public string LastKillerName { get; set; } = string.Empty;
     public string Suffix { get; set; } = string.Empty;
     public long LastKillMs { get; set; }
+    public string? PortraitPath { get; set; }
+    public List<string>? PortraitCandidates { get; set; }
 }
 
 public sealed class RogueEncounterStatusResponse

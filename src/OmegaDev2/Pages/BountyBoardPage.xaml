@@ -26,7 +26,7 @@
                            FontSize="32"
                            FontWeight="SemiBold"
                            Foreground="{ThemeResource OmegaDev2.AccentGoldBrush}" />
-                <TextBlock Text="Pick a nemesis from your history, set a tier (1-10), and post the bounty. You'll warp to a random arena — they'll find you 30-60s after you arrive. Higher tier means a harder fight and a bigger payout; tier 9-10 guarantees a best-in-slot drop."
+                <TextBlock Text="Pick a nemesis, set a tier (1-10), and post the bounty — it costs credits up front. You'll warp to a random arena and they'll find you 30-60s after you arrive. Higher tier costs more but pays out more too; tier 9-10 guarantees a best-in-slot drop."
                            FontSize="13"
                            TextWrapping="Wrap"
                            MaxWidth="920"
@@ -59,6 +59,13 @@
                               OffContent="Active only"
                               VerticalAlignment="Center"
                               Toggled="ShowDefeatedSwitch_Toggled" />
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="12,0,0,0">
+                    <Image x:Name="CreditsIconImage" Width="18" Height="18" />
+                    <TextBlock x:Name="CreditsBalanceText"
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold"
+                               Foreground="{ThemeResource OmegaDev2.AccentGoldBrush}" />
+                </StackPanel>
                 <TextBlock x:Name="StatusText"
                            VerticalAlignment="Center"
                            Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
@@ -70,6 +77,7 @@
             <Border Background="{ThemeResource OmegaDev2.PanelBackgroundBrush}"
                     CornerRadius="6"
                     Padding="6">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto">
                 <GridView x:Name="BountyGrid"
                           SelectionMode="None"
                           IsItemClickEnabled="False"
@@ -81,36 +89,53 @@
                     </GridView.ItemsPanel>
                     <GridView.ItemTemplate>
                         <DataTemplate x:DataType="local:BountyCard">
-                            <Border Width="272"
+                            <Border Width="320"
                                     Margin="6"
-                                    Padding="14"
+                                    Padding="16"
                                     CornerRadius="8"
                                     Background="{ThemeResource OmegaDev2.PageBackgroundBrush}"
                                     BorderThickness="1"
                                     BorderBrush="{ThemeResource OmegaDev2.AccentGoldBrush}">
-                                <StackPanel Spacing="8">
+                                <StackPanel Spacing="10">
+                                    <!-- Wanted poster header: portrait + defeated ribbon -->
                                     <Grid>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <FontIcon Grid.Column="0"
-                                                  Glyph="&#xE7EE;"
-                                                  FontSize="18"
-                                                  HorizontalAlignment="Left"
-                                                  Foreground="{ThemeResource OmegaDev2.AccentGoldBrush}" />
-                                        <Border Grid.Column="1"
-                                                Background="{ThemeResource OmegaDev2.DangerBrush}"
-                                                CornerRadius="4"
-                                                Padding="6,2"
-                                                Visibility="{x:Bind DefeatedVisibility}">
-                                            <TextBlock Text="DEFEATED" FontSize="10" FontWeight="SemiBold" Foreground="White" />
+                                        <Border Grid.Column="0"
+                                                Width="56" Height="56"
+                                                CornerRadius="6"
+                                                Background="{ThemeResource OmegaDev2.PanelSecondaryBrush}"
+                                                BorderThickness="1"
+                                                BorderBrush="{ThemeResource OmegaDev2.AccentGoldBrush}">
+                                            <Grid>
+                                                <FontIcon Glyph="&#xE7EE;"
+                                                          FontSize="22"
+                                                          Foreground="{ThemeResource OmegaDev2.AccentGoldBrush}"
+                                                          Opacity="0.5" />
+                                                <Image Source="{x:Bind Portrait, Mode=OneWay}" Stretch="UniformToFill" />
+                                            </Grid>
                                         </Border>
+                                        <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                                            <TextBlock Text="WANTED"
+                                                       FontSize="10"
+                                                       FontWeight="SemiBold"
+                                                       CharacterSpacing="180"
+                                                       Foreground="{ThemeResource OmegaDev2.AccentGoldBrush}" />
+                                            <Border Background="{ThemeResource OmegaDev2.DangerBrush}"
+                                                    CornerRadius="4"
+                                                    Padding="6,2"
+                                                    HorizontalAlignment="Left"
+                                                    Visibility="{x:Bind DefeatedVisibility}">
+                                                <TextBlock Text="DEFEATED" FontSize="10" FontWeight="SemiBold" Foreground="White" />
+                                            </Border>
+                                        </StackPanel>
                                     </Grid>
 
                                     <StackPanel Spacing="1">
                                         <TextBlock Text="{x:Bind Title}"
-                                                   FontSize="15"
+                                                   FontSize="16"
                                                    FontWeight="SemiBold"
                                                    TextWrapping="Wrap"
                                                    Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
@@ -121,37 +146,86 @@
                                                    Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
                                     </StackPanel>
 
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0"
-                                                   Text="{x:Bind TierLabel, Mode=OneWay}"
-                                                   FontSize="11"
+                                    <!-- Tier picker: label on its own line so it never truncates -->
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="{x:Bind TierLabel, Mode=OneWay}"
+                                                   FontSize="12"
                                                    FontWeight="SemiBold"
-                                                   VerticalAlignment="Center"
+                                                   TextWrapping="NoWrap"
                                                    Foreground="{ThemeResource OmegaDev2.AccentGoldBrush}" />
-                                        <NumberBox Grid.Column="1"
-                                                   Value="{x:Bind Tier, Mode=TwoWay}"
+                                        <NumberBox Value="{x:Bind Tier, Mode=TwoWay}"
                                                    ValueChanged="TierNumberBox_ValueChanged"
                                                    Minimum="1"
                                                    Maximum="10"
                                                    SmallChange="1"
-                                                   SpinButtonPlacementMode="Compact"
-                                                   IsEnabled="{x:Bind CanBountyHunt}"
-                                                   Width="90"
+                                                   SpinButtonPlacementMode="Inline"
+                                                   IsEnabled="{x:Bind CanEditTier}"
+                                                   HorizontalAlignment="Stretch"
                                                    FontSize="12" />
-                                    </Grid>
+                                    </StackPanel>
 
-                                    <Button Content="Post Bounty"
+                                    <!-- Cost to accept -->
+                                    <Border Background="{ThemeResource OmegaDev2.PanelSecondaryBrush}" CornerRadius="6" Padding="10,8">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="COST TO ACCEPT"
+                                                       FontSize="9"
+                                                       FontWeight="SemiBold"
+                                                       CharacterSpacing="140"
+                                                       Opacity="0.65"
+                                                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <Image Source="{x:Bind CreditsIcon, Mode=OneWay}" Width="16" Height="16" />
+                                                <TextBlock Text="{x:Bind AcceptCostText, Mode=OneWay}"
+                                                           FontSize="14"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{ThemeResource OmegaDev2.AccentGoldBrush}" />
+                                                <TextBlock Text="credits" FontSize="12" Opacity="0.7" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Reward -->
+                                    <Border Background="{ThemeResource OmegaDev2.PanelSecondaryBrush}" CornerRadius="6" Padding="10,8">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="REWARD ON KILL"
+                                                       FontSize="9"
+                                                       FontWeight="SemiBold"
+                                                       CharacterSpacing="140"
+                                                       Opacity="0.65"
+                                                       Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
+                                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <Image Source="{x:Bind EsIcon, Mode=OneWay}" Width="16" Height="16" />
+                                                    <TextBlock Text="{x:Bind EsRewardText, Mode=OneWay}" FontSize="12" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <Image Source="{x:Bind CsIcon, Mode=OneWay}" Width="16" Height="16" />
+                                                    <TextBlock Text="{x:Bind CsRewardText, Mode=OneWay}" FontSize="12" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <Image Source="{x:Bind LmIcon, Mode=OneWay}" Width="16" Height="16" />
+                                                    <TextBlock Text="{x:Bind LmRewardText, Mode=OneWay}" FontSize="12" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <Border Background="{ThemeResource OmegaDev2.AccentGoldBrush}"
+                                                    CornerRadius="4"
+                                                    Padding="6,2"
+                                                    HorizontalAlignment="Left"
+                                                    Visibility="{x:Bind BisVisibility, Mode=OneWay}"
+                                                    ToolTipService.ToolTip="This tier guarantees one best-in-slot item drop for your current hero on kill">
+                                                <TextBlock Text="GUARANTEED BiS" FontSize="10" FontWeight="SemiBold" Foreground="Black" />
+                                            </Border>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Button Content="{x:Bind PostBountyLabel, Mode=OneWay}"
                                             HorizontalAlignment="Stretch"
-                                            IsEnabled="{x:Bind CanBountyHunt}"
+                                            IsEnabled="{x:Bind CanBountyHunt, Mode=OneWay}"
                                             Background="{ThemeResource OmegaDev2.AccentGoldBrush}"
                                             Foreground="Black"
                                             FontWeight="SemiBold"
                                             Click="PostBounty_Click"
-                                            ToolTipService.ToolTip="Warp to a random arena — this nemesis ambushes you there 30-60s after you arrive, at the tier selected" />
+                                            ToolTipService.ToolTip="Pay the accept cost, warp to a random arena — this nemesis ambushes you there 30-60s after you arrive, at the tier selected" />
 
                                     <TextBlock Text="{x:Bind CardStatus, Mode=OneWay}"
                                                FontSize="10"
@@ -163,6 +237,7 @@
                         </DataTemplate>
                     </GridView.ItemTemplate>
                 </GridView>
+                </ScrollViewer>
             </Border>
         </Grid>
     </Grid>
