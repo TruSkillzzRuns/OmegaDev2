@@ -105,6 +105,11 @@
                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xEA0B;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem Content="Bounty Board" Tag="bountyboard">
+                    <NavigationViewItem.Icon>
+                        <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE7EE;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItem Content="Wave Director" Tag="wavedirector">
                     <NavigationViewItem.Icon>
                         <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE9D2;" />
