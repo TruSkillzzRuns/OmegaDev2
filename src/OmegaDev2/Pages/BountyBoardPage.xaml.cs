@@ -237,7 +237,7 @@ public sealed partial class BountyBoardPage : Page
                             string url = $"{portraitBase}/webapi/texbyname?name={Uri.EscapeDataString(candidate)}";
                             DispatcherQueue.TryEnqueue(() =>
                             {
-                                try { card.Portrait = new BitmapImage(new Uri(url)) { DecodePixelWidth = 96 }; }
+                                try { card.Portrait = new BitmapImage(new Uri(url)) { DecodePixelWidth = 144 }; }
                                 catch { }
                             });
                             break;
@@ -270,7 +270,7 @@ public sealed partial class BountyBoardPage : Page
                     byte[]? png = await _api.GetTexturePngAsync(candidate, ct);
                     if (png == null || png.Length == 0) continue;
                     string url = $"{portraitBase}/webapi/texbyname?name={Uri.EscapeDataString(candidate)}";
-                    return new BitmapImage(new Uri(url)) { DecodePixelWidth = 32 };
+                    return new BitmapImage(new Uri(url)) { DecodePixelWidth = 48 };
                 }
                 catch { }
             }
