@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
@@ -8,38 +9,76 @@ using Windows.Storage.Pickers;
 
 namespace OmegaDev2.Pages;
 
-// Asset Setup — two Browse buttons instead of a manual config walkthrough.
-// Inspect() re-derives the checklist from disk every time, so the page is
-// idempotent: running Apply twice is safe, and a fresh install shows exactly
-// which steps remain.
+// Asset Setup — one server folder + one game client folder PER SERVER VERSION.
+//
+// Each version must point at its own client install: locale strings and texture
+// packages differ between 1.48 / 1.52 / 1.53, so a 1.48 server reading 1.53
+// client files resolves item names against the wrong string table. The pairs are
+// saved to setup.json, so this is one-time setup rather than something to redo
+// every session.
+//
+// Inspect() re-derives each version's checklist from disk on every Recheck, so
+// the page is idempotent: running Apply twice is safe, and a fresh install shows
+// exactly which versions still need attention.
 public sealed partial class SetupPage : Page
 {
-    private AssetSetupService.SetupStatus _status = new();
+    private readonly Dictionary<string, AssetSetupService.SetupStatus> _status = new();
     private readonly StringBuilder _output = new();
     private bool _autoCorrecting;
 
     public SetupPage()
     {
         InitializeComponent();
+
         var saved = AssetSetupService.LoadPaths();
-        ServerDirBox.Text = saved.ServerDir ?? "";
-        ClientDirBox.Text = saved.ClientDir ?? "";
         RepoDirBox.Text = saved.RepoDir ?? "";
+        foreach (string v in AssetSetupService.Versions)
+        {
+            var vp = saved.For(v);
+            ServerBox(v).Text = vp.ServerDir ?? "";
+            ClientBox(v).Text = vp.ClientDir ?? "";
+        }
+
         Recheck();
     }
+
+    // ---------------- per-version control lookup ----------------
+
+    private TextBox ServerBox(string version) => version switch
+    {
+        "1.48" => ServerDirBox148,
+        "1.53" => ServerDirBox153,
+        _ => ServerDirBox152,
+    };
+
+    private TextBox ClientBox(string version) => version switch
+    {
+        "1.48" => ClientDirBox148,
+        "1.53" => ClientDirBox153,
+        _ => ClientDirBox152,
+    };
+
+    private TextBlock CheckBlock(string version) => version switch
+    {
+        "1.48" => Check148,
+        "1.53" => Check153,
+        _ => Check152,
+    };
 
     // ---------------- pickers ----------------
 
     private async void BrowseServer_Click(object sender, RoutedEventArgs e)
     {
+        string version = (sender as FrameworkElement)?.Tag as string ?? "1.52";
         string? dir = await PickFolderAsync();
-        if (dir != null) { ServerDirBox.Text = dir; Recheck(); }
+        if (dir != null) { ServerBox(version).Text = dir; Recheck(); }
     }
 
     private async void BrowseClient_Click(object sender, RoutedEventArgs e)
     {
+        string version = (sender as FrameworkElement)?.Tag as string ?? "1.52";
         string? dir = await PickFolderAsync();
-        if (dir != null) { ClientDirBox.Text = dir; Recheck(); }
+        if (dir != null) { ClientBox(version).Text = dir; Recheck(); }
     }
 
     private async void BrowseRepo_Click(object sender, RoutedEventArgs e)
@@ -67,56 +106,81 @@ public sealed partial class SetupPage : Page
 
     private void Recheck()
     {
-        if (CheckServer == null) return; // parse-time event before load
+        if (Check152 == null) return; // parse-time event before load
 
-        _status = AssetSetupService.Inspect(ServerDirBox.Text?.Trim(), ClientDirBox.Text?.Trim(), RepoDirBox.Text?.Trim());
+        bool anyApplyable = false;
+        AssetSetupService.SetupStatus toolsRef = null;
 
-        // If the user picked a parent folder (e.g. the repo root), Inspect
-        // resolved the real server folder below it — reflect that in the box
-        // so every later step uses the corrected path. Guarded so the
-        // TextChanged this triggers doesn't recurse.
-        if (_autoCorrecting == false && _status.ServerOk && _status.ServerDirResolved != null &&
-            string.Equals(_status.ServerDirResolved, ServerDirBox.Text?.Trim(), StringComparison.OrdinalIgnoreCase) == false)
+        foreach (string v in AssetSetupService.Versions)
         {
-            _autoCorrecting = true;
-            ServerDirBox.Text = _status.ServerDirResolved;
-            _autoCorrecting = false;
+            var st = AssetSetupService.Inspect(
+                ServerBox(v).Text?.Trim(), ClientBox(v).Text?.Trim(), RepoDirBox.Text?.Trim());
+            _status[v] = st;
+
+            // If the user picked a parent folder (e.g. the repo root), Inspect
+            // resolved the real server folder below it — reflect that in the box
+            // so every later step uses the corrected path. Guarded so the
+            // TextChanged this triggers doesn't recurse.
+            if (_autoCorrecting == false && st.ServerOk && st.ServerDirResolved != null &&
+                string.Equals(st.ServerDirResolved, ServerBox(v).Text?.Trim(), StringComparison.OrdinalIgnoreCase) == false)
+            {
+                _autoCorrecting = true;
+                ServerBox(v).Text = st.ServerDirResolved;
+                _autoCorrecting = false;
+            }
+
+            bool ready = st.ServerOk && st.CookedOk;
+            if (ready) anyApplyable = true;
+            if (st.ServerOk && toolsRef == null) toolsRef = st;
+
+            SetCheck(CheckBlock(v), ready, DescribeVersion(v, st));
         }
 
-        SetCheck(CheckServer, _status.ServerOk,
-            _status.ServerOk ? "server folder found" : "server folder — select the folder holding MHServerEmu.exe + Config.ini");
-        SetCheck(CheckCooked, _status.CookedOk,
-            _status.CookedOk ? $"client textures: {_status.CookedPath}" : "client CookedPCConsole folder — select your game client's install folder");
-        SetCheck(CheckManifest, _status.ManifestOk,
-            _status.ManifestOk ? "texture cache manifest found" : "texture cache manifest (TextureFileCacheManifest.bin) not found");
-        SetCheck(CheckTools, _status.ToolsOk,
-            _status.ToolsOk ? "extraction tools present"
-            : _status.RepoOk ? "extraction tools missing — click Build Tools to build and install them"
+        // Tools are shared — report the first configured server's view of them.
+        SetCheck(CheckTools, toolsRef != null && toolsRef.ToolsOk,
+            toolsRef == null ? "extraction tools — fill in a server folder first"
+            : toolsRef.ToolsOk ? "extraction tools present"
+            : toolsRef.RepoOk ? "extraction tools missing — click Build Tools to build and install them"
             : "extraction tools missing — select your server repo folder above, then click Build Tools");
-        SetCheck(CheckLocale, _status.LocaleSourceOk || _status.LocaleInstalled,
-            _status.LocaleInstalled ? "locale files already installed on server"
-            : _status.LocaleSourceOk ? $"locale files found: {_status.LocaleSourcePath}"
-            : "locale files not found in client (item names will use data leaf names)");
-        SetCheck(CheckConfig, _status.ConfigApplied,
-            _status.ConfigApplied ? "Config.ini already configured" : "Config.ini not configured yet");
-        SetCheck(CheckIndex, _status.TexIndexOk,
-            _status.TexIndexOk ? "texture index already built" : "texture index not built yet (Apply runs it — takes a few minutes)");
 
-        ApplyBtn.IsEnabled = _status.ServerOk && _status.CookedOk;
-        BuildToolsBtn.IsEnabled = _status.ServerOk && _status.RepoOk;
+        ApplyBtn.IsEnabled = anyApplyable;
+        BuildToolsBtn.IsEnabled = toolsRef != null && toolsRef.RepoOk;
+    }
+
+    /// <summary>One compact status line per version — the detail goes to the output pane on Apply.</summary>
+    private static string DescribeVersion(string version, AssetSetupService.SetupStatus st)
+    {
+        if (st.ServerOk == false) return $"{version} — server folder not set (skipped)";
+        if (st.CookedOk == false) return $"{version} — server found, but no game client folder set (skipped)";
+
+        var todo = new List<string>();
+        if (st.ConfigApplied == false) todo.Add("config");
+        if (st.LocaleInstalled == false && st.LocaleSourceOk) todo.Add("item names");
+        if (st.TexIndexOk == false) todo.Add("texture index");
+
+        string tail = todo.Count == 0
+            ? "ready — Apply is safe to re-run"
+            : "Apply will set up: " + string.Join(", ", todo);
+        return $"{version} — {tail}";
     }
 
     private async void BuildTools_Click(object sender, RoutedEventArgs e)
     {
-        if (_status.ServerOk == false || _status.RepoOk == false || _status.RepoToolsDir == null) return;
-
-        string serverDir = ServerDirBox.Text.Trim();
-        AssetSetupService.SavePaths(new AssetSetupService.SetupPaths
+        // Tools install into a server folder; use the first configured version.
+        string version = null;
+        foreach (string v in AssetSetupService.Versions)
         {
-            ServerDir = serverDir,
-            ClientDir = ClientDirBox.Text.Trim(),
-            RepoDir = RepoDirBox.Text.Trim(),
-        });
+            if (_status.TryGetValue(v, out var s) && s.ServerOk && s.RepoOk && s.RepoToolsDir != null)
+            {
+                version = v;
+                break;
+            }
+        }
+        if (version == null) return;
+
+        var st = _status[version];
+        string serverDir = ServerBox(version).Text.Trim();
+        SaveAllPaths();
 
         BuildToolsBtn.IsEnabled = false;
         ApplyBtn.IsEnabled = false;
@@ -126,9 +190,9 @@ public sealed partial class SetupPage : Page
 
         try
         {
-            bool ok = await AssetSetupService.BuildToolsAsync(_status.RepoToolsDir, serverDir,
+            bool ok = await AssetSetupService.BuildToolsAsync(st.RepoToolsDir, serverDir,
                 line => DispatcherQueue.TryEnqueue(() => AppendOutput(line)));
-            AppendOutput(ok ? "Tools built and installed." : "Tool build FAILED — see output above.");
+            AppendOutput(ok ? $"Tools built and installed into the {version} server folder." : "Tool build FAILED — see output above.");
             ApplyStatusText.Text = ok ? "Tools installed — now hit Apply Setup." : "Tool build failed.";
         }
         catch (Exception ex)
@@ -142,6 +206,17 @@ public sealed partial class SetupPage : Page
         }
     }
 
+    private void SaveAllPaths()
+    {
+        var paths = new AssetSetupService.SetupPaths { RepoDir = RepoDirBox.Text.Trim() };
+        foreach (string v in AssetSetupService.Versions)
+        {
+            paths.For(v).ServerDir = ServerBox(v).Text.Trim();
+            paths.For(v).ClientDir = ClientBox(v).Text.Trim();
+        }
+        AssetSetupService.SavePaths(paths);
+    }
+
     private static void SetCheck(TextBlock block, bool ok, string text)
     {
         block.Text = (ok ? "✔  " : "✖  ") + text;
@@ -152,51 +227,74 @@ public sealed partial class SetupPage : Page
 
     private async void Apply_Click(object sender, RoutedEventArgs e)
     {
-        if (_status.ServerOk == false || _status.CookedOk == false) return;
-
-        string serverDir = ServerDirBox.Text.Trim();
-        AssetSetupService.SavePaths(new AssetSetupService.SetupPaths
-        {
-            ServerDir = serverDir,
-            ClientDir = ClientDirBox.Text.Trim(),
-            RepoDir = RepoDirBox.Text.Trim(),
-        });
+        SaveAllPaths();
 
         ApplyBtn.IsEnabled = false;
         OutputPanel.Visibility = Visibility.Visible;
         _output.Clear();
 
+        int configured = 0;
+
         try
         {
-            // 1. Config.ini
-            AppendOutput(AssetSetupService.ApplyConfig(_status.ConfigIniPath!, _status.CookedPath!));
+            foreach (string version in AssetSetupService.Versions)
+            {
+                if (_status.TryGetValue(version, out var st) == false) continue;
 
-            // 2. Locale files
-            if (_status.LocaleSourceOk && _status.LocaleSourcePath != null)
-                AppendOutput(await Task.Run(() => AssetSetupService.CopyLocaleFiles(_status.LocaleSourcePath, serverDir)));
+                if (st.ServerOk == false || st.CookedOk == false)
+                {
+                    AppendOutput($"[{version}] skipped — {(st.ServerOk == false ? "no server folder" : "no game client folder")}.");
+                    continue;
+                }
+
+                string serverDir = ServerBox(version).Text.Trim();
+                AppendOutput($"[{version}] configuring {serverDir}");
+
+                // 1. Config.ini — client textures + locale loading for THIS version.
+                AppendOutput("  " + AssetSetupService.ApplyConfig(st.ConfigIniPath, st.CookedPath));
+
+                // 2. Locale files from THIS version's own client.
+                if (st.LocaleSourceOk && st.LocaleSourcePath != null)
+                {
+                    string localeSrc = st.LocaleSourcePath;
+                    AppendOutput("  " + await Task.Run(() => AssetSetupService.CopyLocaleFiles(localeSrc, serverDir)));
+                }
+                else
+                {
+                    AppendOutput("  Locale files: skipped (not found in this client — item names will use data leaf names).");
+                }
+
+                // 3. Texture index.
+                if (st.TexIndexOk)
+                {
+                    AppendOutput("  Texture index: already built — skipped.");
+                }
+                else if (st.ToolsOk && st.UpkExtractPath != null)
+                {
+                    AppendOutput("  Texture index: building (this scans every package once — a few minutes)…");
+                    bool ok = await AssetSetupService.BuildTextureIndexAsync(st.UpkExtractPath, st.CookedPath, serverDir,
+                        line => DispatcherQueue.TryEnqueue(() => AppendOutput("    " + line)));
+                    AppendOutput(ok ? "  Texture index: done." : "  Texture index: FAILED — check the output above.");
+                }
+                else
+                {
+                    AppendOutput("  Texture index: skipped — extraction tools missing (see checklist).");
+                }
+
+                configured++;
+                AppendOutput("");
+            }
+
+            if (configured == 0)
+            {
+                AppendOutput("Nothing to do — fill in a server folder and its matching game client folder for at least one version.");
+                ApplyStatusText.Text = "Nothing configured.";
+            }
             else
-                AppendOutput("Locale files: skipped (source not found).");
-
-            // 3. Texture index
-            if (_status.TexIndexOk)
             {
-                AppendOutput("Texture index: already built — skipped.");
+                AppendOutput($"Setup complete for {configured} version(s). RESTART THOSE SERVERS to pick up the new Config.ini, then reload the catalog/roster in the app.");
+                ApplyStatusText.Text = $"Done ({configured}) — restart the server(s).";
             }
-            else if (_status.ToolsOk && _status.UpkExtractPath != null)
-            {
-                AppendOutput("Texture index: building (this scans every package once — a few minutes)…");
-                bool ok = await AssetSetupService.BuildTextureIndexAsync(_status.UpkExtractPath, _status.CookedPath!, serverDir,
-                    line => DispatcherQueue.TryEnqueue(() => AppendOutput("  " + line)));
-                AppendOutput(ok ? "Texture index: done." : "Texture index: FAILED — check the output above.");
-            }
-            else
-            {
-                AppendOutput("Texture index: skipped — extraction tools missing (see checklist).");
-            }
-
-            AppendOutput("");
-            AppendOutput("Setup complete. RESTART THE SERVER to pick up the new Config.ini, then reload the catalog/roster in the app.");
-            ApplyStatusText.Text = "Done — restart the server.";
         }
         catch (Exception ex)
         {

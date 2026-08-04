@@ -28,7 +28,7 @@
                                FontSize="32"
                                FontWeight="SemiBold"
                                Foreground="{ThemeResource OmegaDev2.TextPrimaryBrush}" />
-                    <TextBlock Text="Point OmegaDev2 at your server folder and your game client install, then hit Apply — item icons, hero portraits and real item names get configured automatically. Textures and strings are read from your own client files; nothing is redistributed."
+                    <TextBlock Text="Point each server version at its own game client install, then hit Apply — item icons, hero portraits and real item names get configured for every version you fill in. Each version needs its OWN client: a 1.48 server reading 1.53 client files will show wrong names. Textures and strings are read from your own client files; nothing is redistributed."
                                FontSize="13"
                                TextWrapping="Wrap"
                                Foreground="{ThemeResource OmegaDev2.TextSecondaryBrush}" />
@@ -44,20 +44,27 @@
                     Padding="16,14"
                     Margin="0,0,0,12">
                 <StackPanel Spacing="12">
+                    <TextBlock Text="1.48"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               CharacterSpacing="120"
+                               Margin="0,4,0,0"
+                               Foreground="{ThemeResource OmegaDev2.AccentGoldBrush}" />
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBox x:Name="ServerDirBox"
+                        <TextBox x:Name="ServerDirBox148"
                                  Grid.Column="0"
                                  Header="Server folder (contains MHServerEmu.exe and Config.ini)"
-                                 PlaceholderText="e.g. ...\MHServerEmu\bin"
+                                 PlaceholderText="e.g. ...\MHServerEmu\build\v48"
                                  TextChanged="Paths_Changed"
                                  Margin="0,0,10,0" />
                         <Button Grid.Column="1"
                                 Content="Browse..."
                                 VerticalAlignment="Bottom"
+                                Tag="1.48"
                                 Click="BrowseServer_Click" />
                     </Grid>
                     <Grid>
@@ -65,15 +72,96 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBox x:Name="ClientDirBox"
+                        <TextBox x:Name="ClientDirBox148"
                                  Grid.Column="0"
                                  Header="Game client install folder"
-                                 PlaceholderText="the game's install directory"
+                                 PlaceholderText="that version's own game install"
                                  TextChanged="Paths_Changed"
                                  Margin="0,0,10,0" />
                         <Button Grid.Column="1"
                                 Content="Browse..."
                                 VerticalAlignment="Bottom"
+                                Tag="1.48"
+                                Click="BrowseClient_Click" />
+                    </Grid>
+                    <TextBlock Text="1.52"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               CharacterSpacing="120"
+                               Margin="0,4,0,0"
+                               Foreground="{ThemeResource OmegaDev2.AccentGoldBrush}" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="ServerDirBox152"
+                                 Grid.Column="0"
+                                 Header="Server folder (contains MHServerEmu.exe and Config.ini)"
+                                 PlaceholderText="e.g. ...\MHServerEmu\bin\x64\Release\net8.0"
+                                 TextChanged="Paths_Changed"
+                                 Margin="0,0,10,0" />
+                        <Button Grid.Column="1"
+                                Content="Browse..."
+                                VerticalAlignment="Bottom"
+                                Tag="1.52"
+                                Click="BrowseServer_Click" />
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="ClientDirBox152"
+                                 Grid.Column="0"
+                                 Header="Game client install folder"
+                                 PlaceholderText="that version's own game install"
+                                 TextChanged="Paths_Changed"
+                                 Margin="0,0,10,0" />
+                        <Button Grid.Column="1"
+                                Content="Browse..."
+                                VerticalAlignment="Bottom"
+                                Tag="1.52"
+                                Click="BrowseClient_Click" />
+                    </Grid>
+                    <TextBlock Text="1.53"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               CharacterSpacing="120"
+                               Margin="0,4,0,0"
+                               Foreground="{ThemeResource OmegaDev2.AccentGoldBrush}" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="ServerDirBox153"
+                                 Grid.Column="0"
+                                 Header="Server folder (contains MHServerEmu.exe and Config.ini)"
+                                 PlaceholderText="e.g. ...\MHServerEmu\build\v53"
+                                 TextChanged="Paths_Changed"
+                                 Margin="0,0,10,0" />
+                        <Button Grid.Column="1"
+                                Content="Browse..."
+                                VerticalAlignment="Bottom"
+                                Tag="1.53"
+                                Click="BrowseServer_Click" />
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="ClientDirBox153"
+                                 Grid.Column="0"
+                                 Header="Game client install folder"
+                                 PlaceholderText="that version's own game install"
+                                 TextChanged="Paths_Changed"
+                                 Margin="0,0,10,0" />
+                        <Button Grid.Column="1"
+                                Content="Browse..."
+                                VerticalAlignment="Bottom"
+                                Tag="1.53"
                                 Click="BrowseClient_Click" />
                     </Grid>
                     <Grid>
@@ -116,13 +204,10 @@
                                CharacterSpacing="180"
                                Margin="0,0,0,4"
                                Foreground="{ThemeResource OmegaDev2.AccentBrush}" />
-                    <TextBlock x:Name="CheckServer"   FontSize="13" TextWrapping="Wrap" Text="—  server folder" />
-                    <TextBlock x:Name="CheckCooked"   FontSize="13" TextWrapping="Wrap" Text="—  client CookedPCConsole folder" />
-                    <TextBlock x:Name="CheckManifest" FontSize="13" TextWrapping="Wrap" Text="—  texture cache manifest" />
-                    <TextBlock x:Name="CheckTools"    FontSize="13" TextWrapping="Wrap" Text="—  extraction tools (Tools\UpkExtract, Tools\TfcExtract)" />
-                    <TextBlock x:Name="CheckLocale"   FontSize="13" TextWrapping="Wrap" Text="—  locale files (item names)" />
-                    <TextBlock x:Name="CheckConfig"   FontSize="13" TextWrapping="Wrap" Text="—  Config.ini configured" />
-                    <TextBlock x:Name="CheckIndex"    FontSize="13" TextWrapping="Wrap" Text="—  texture index (Cache\texIndex.json)" />
+                    <TextBlock x:Name="Check148" FontSize="13" TextWrapping="Wrap" Text="—  1.48" />
+                    <TextBlock x:Name="Check152" FontSize="13" TextWrapping="Wrap" Text="—  1.52" />
+                    <TextBlock x:Name="Check153" FontSize="13" TextWrapping="Wrap" Text="—  1.53" />
+                    <TextBlock x:Name="CheckTools" FontSize="13" TextWrapping="Wrap" Margin="0,4,0,0" Text="—  extraction tools (shared)" />
                 </StackPanel>
             </Border>
 

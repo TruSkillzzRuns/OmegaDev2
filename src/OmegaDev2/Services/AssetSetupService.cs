@@ -18,11 +18,39 @@ public sealed class AssetSetupService
 {
     // ---------------- persisted paths ----------------
 
-    public sealed class SetupPaths
+    /// <summary>Server versions Asset Setup can configure, each with its own server folder and its own game client install.</summary>
+    public static readonly string[] Versions = { "1.48", "1.52", "1.53" };
+
+    /// <summary>One version's pair of folders.</summary>
+    public sealed class VersionPaths
     {
         public string? ServerDir { get; set; }
         public string? ClientDir { get; set; }
+    }
+
+    public sealed class SetupPaths
+    {
+        /// <summary>Per-version server + client folders, keyed by the strings in <see cref="Versions"/>.</summary>
+        public Dictionary<string, VersionPaths> Versions { get; set; } = new();
+
+        /// <summary>Shared across versions — the extraction tools are built once from any server repo checkout.</summary>
         public string? RepoDir { get; set; }
+
+        // Legacy single-version fields, kept only so an existing setup.json
+        // written before per-version support still loads. Migrated into the
+        // 1.52 slot on read and never written again.
+        public string? ServerDir { get; set; }
+        public string? ClientDir { get; set; }
+
+        public VersionPaths For(string version)
+        {
+            if (Versions.TryGetValue(version, out var vp) == false)
+            {
+                vp = new VersionPaths();
+                Versions[version] = vp;
+            }
+            return vp;
+        }
     }
 
     private static string SettingsFilePath =>
@@ -33,7 +61,23 @@ public sealed class AssetSetupService
         try
         {
             if (File.Exists(SettingsFilePath))
-                return JsonSerializer.Deserialize<SetupPaths>(File.ReadAllText(SettingsFilePath)) ?? new();
+            {
+                var loaded = JsonSerializer.Deserialize<SetupPaths>(File.ReadAllText(SettingsFilePath)) ?? new();
+
+                // Migrate a pre-per-version setup.json: the single pair it held
+                // was whatever the user last configured, which in practice is
+                // the live (1.52) server. Dropping it would silently make the
+                // page look unconfigured after an app update.
+                if (loaded.Versions.Count == 0 &&
+                    (string.IsNullOrWhiteSpace(loaded.ServerDir) == false ||
+                     string.IsNullOrWhiteSpace(loaded.ClientDir) == false))
+                {
+                    loaded.For("1.52").ServerDir = loaded.ServerDir;
+                    loaded.For("1.52").ClientDir = loaded.ClientDir;
+                }
+
+                return loaded;
+            }
         }
         catch { }
         return new();
